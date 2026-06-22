@@ -1,0 +1,170 @@
+:root {
+    color-scheme: dark;
+}
+
+body {
+    background:
+        radial-gradient(circle at top left, rgba(124, 58, 237, 0.16), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.1), transparent 24%),
+        #0f1117;
+}
+
+.nav-link {
+    display: block;
+    border: 1px solid transparent;
+    border-radius: 1rem;
+    padding: 0.85rem 1rem;
+    color: #cbd5e1;
+    transition: 180ms ease;
+}
+
+.nav-link:hover {
+    border-color: #2a3040;
+    background: rgba(255, 255, 255, 0.04);
+    color: #ffffff;
+}
+
+.panel {
+    border: 1px solid #2a3040;
+    border-radius: 1.5rem;
+    background: rgba(26, 29, 38, 0.88);
+    padding: 1.25rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.24);
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.panel-header h2 {
+    font-family: "Space Grotesk", sans-serif;
+    font-size: 1.15rem;
+}
+
+.kpi-card {
+    border: 1px solid #2a3040;
+    border-radius: 1.25rem;
+    padding: 1rem 1.1rem;
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.12), rgba(12, 14, 18, 0.3));
+}
+
+.kpi-card span {
+    display: block;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
+
+.kpi-card strong {
+    display: block;
+    margin-top: 0.9rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 2rem;
+    color: #ffffff;
+}
+
+.badge,
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+}
+
+.badge-approve,
+.badge-teal,
+.status-normal {
+    background: rgba(20, 184, 166, 0.18);
+    color: #5eead4;
+}
+
+.badge-honeypot,
+.badge-amber,
+.status-honeypot {
+    background: rgba(245, 158, 11, 0.18);
+    color: #fbbf24;
+}
+
+.badge-block,
+.badge-red,
+.badge-critical,
+.status-lockdown {
+    background: rgba(239, 68, 68, 0.18);
+    color: #fca5a5;
+}
+
+.badge-low {
+    background: rgba(45, 212, 191, 0.18);
+    color: #99f6e4;
+}
+
+.badge-medium,
+.badge-high {
+    background: rgba(250, 204, 21, 0.18);
+    color: #fde68a;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.field span {
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
+
+.field-input,
+.field select,
+.field input {
+    width: 100%;
+    border: 1px solid #2a3040;
+    border-radius: 1rem;
+    background: rgba(15, 17, 23, 0.9);
+    padding: 0.85rem 1rem;
+    color: #f8fafc;
+}
+
+.gauge {
+    --score: 0;
+    width: 220px;
+    height: 220px;
+    border-radius: 999px;
+    background:
+        radial-gradient(circle at center, #151821 59%, transparent 60%),
+        conic-gradient(
+            #14b8a6 0 calc(min(var(--score), 0.25) * 100% / 1),
+            #f59e0b calc(0.25 * 100%) calc(min(var(--score), 0.72) * 100% / 1),
+            #ef4444 calc(0.72 * 100%) calc(var(--score) * 100% / 1),
+            rgba(42, 48, 64, 0.9) 0
+        );
+    display: grid;
+    place-items: center;
+}
+
+.gauge-inner {
+    width: 140px;
+    height: 140px;
+    border-radius: 999px;
+    background: #0f1117;
+    display: grid;
+    place-items: center;
+}
+
+.glow-red {
+    box-shadow: 0 0 28px rgba(239, 68, 68, 0.24);
+}
+
+.glow-teal {
+    box-shadow: 0 0 28px rgba(20, 184, 166, 0.2);
+}

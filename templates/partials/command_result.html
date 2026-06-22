@@ -1,0 +1,17 @@
+{% if result %}
+<div
+    class="rounded-2xl border border-sentry-line bg-black/15 p-4"
+    x-init="$dispatch('sentinel-score', { score: {{ result.score|default:0 }} })"
+>
+    <div class="flex items-center justify-between">
+        <span class="badge badge-{{ result.routing }}">{{ result.routing }}</span>
+        <span class="font-mono text-sm text-slate-300">score={{ result.score|floatformat:3 }}</span>
+    </div>
+    <p class="mt-3 text-sm text-slate-200">{{ result.reason }}</p>
+    <p class="mt-2 text-xs text-slate-500">Session mode: {{ result.session_mode }}</p>
+</div>
+{% else %}
+<div class="rounded-2xl border border-dashed border-sentry-line p-4 text-sm text-slate-500">
+    Submit a command to view the routing decision and behavioral score.
+</div>
+{% endif %}

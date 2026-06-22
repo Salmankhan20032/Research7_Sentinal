@@ -1,0 +1,96 @@
+services:
+  - type: web
+    name: sentinel-django
+    runtime: python
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    startCommand: daphne -b 0.0.0.0 -p $PORT sentinel.asgi:application
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: sentinel.settings.production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SENTINEL_HMAC_SECRET
+        generateValue: true
+      - key: REDIS_URL
+        fromService:
+          name: sentinel-redis
+          type: redis
+          property: connectionString
+      - key: DATABASE_URL
+        fromService:
+          name: sentinel-db
+          type: pgsql
+          property: connectionString
+      - key: ALLOWED_HOSTS
+        value: sentinel-django.onrender.com
+      - key: SENTINEL_ENGINE_URL
+        value: http://sentinel-go-engine:8081
+  - type: worker
+    name: sentinel-celery
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A sentinel worker -l info
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: sentinel.settings.production
+      - key: SECRET_KEY
+        sync: false
+      - key: SENTINEL_HMAC_SECRET
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          name: sentinel-redis
+          type: redis
+          property: connectionString
+      - key: DATABASE_URL
+        fromService:
+          name: sentinel-db
+          type: pgsql
+          property: connectionString
+      - key: ALLOWED_HOSTS
+        value: sentinel-django.onrender.com
+      - key: SENTINEL_ENGINE_URL
+        value: http://sentinel-go-engine:8081
+  - type: worker
+    name: sentinel-beat
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A sentinel beat -l info
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: sentinel.settings.production
+      - key: SECRET_KEY
+        sync: false
+      - key: SENTINEL_HMAC_SECRET
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          name: sentinel-redis
+          type: redis
+          property: connectionString
+      - key: DATABASE_URL
+        fromService:
+          name: sentinel-db
+          type: pgsql
+          property: connectionString
+      - key: ALLOWED_HOSTS
+        value: sentinel-django.onrender.com
+      - key: SENTINEL_ENGINE_URL
+        value: http://sentinel-go-engine:8081
+  - type: web
+    name: sentinel-go-engine
+    runtime: go
+    rootDir: sentinel-engine
+    buildCommand: go build -o sentinel-engine .
+    startCommand: ./sentinel-engine
+    envVars:
+      - key: PORT
+        value: 8081
+      - key: SENTINEL_HMAC_SECRET
+        generateValue: true
+  - type: redis
+    name: sentinel-redis
+    plan: free
+  - type: pgsql
+    name: sentinel-db
+    plan: free

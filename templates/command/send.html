@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block page_title %}Demo Command Injection{% endblock %}
+{% block content %}
+<section class="grid gap-6 xl:grid-cols-[1fr_360px]">
+    <form
+        class="panel space-y-5"
+        hx-post="/api/v1/command/"
+        hx-target="#command-result"
+        hx-swap="innerHTML"
+    >
+        {% csrf_token %}
+        <div class="panel-header">
+            <h2>Issue Command</h2>
+            <span class="text-xs text-slate-400">Model B intake with Model A arbitration</span>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2">
+            <label class="field">
+                <span>Worker</span>
+                <select name="worker_id">
+                    {% for worker in workers %}<option value="{{ worker }}">{{ worker }}</option>{% endfor %}
+                </select>
+            </label>
+            <label class="field">
+                <span>Sensor</span>
+                <select name="sensor_id">
+                    {% for sensor in sensors %}<option value="{{ sensor.sensor_id }}">{{ sensor.sensor_id }} · {{ sensor.sensor_name }}</option>{% endfor %}
+                </select>
+            </label>
+            <label class="field">
+                <span>Command Type</span>
+                <select name="command_type">
+                    <option value="read">read</option>
+                    <option value="write">write</option>
+                    <option value="setpoint">setpoint</option>
+                </select>
+            </label>
+            <label class="field">
+                <span>Attack Mode</span>
+                <select name="attack_mode">
+                    <option value="normal">Normal</option>
+                    <option value="insider_threat">Insider Threat</option>
+                    <option value="credential_theft">Credential Theft</option>
+                    <option value="evasion">Evasion</option>
+                    <option value="model_b_compromise">Model B Compromise</option>
+                </select>
+            </label>
+        </div>
+        <label class="field">
+            <span>Value</span>
+            <input type="number" step="0.1" name="parameter_value" value="42.0">
+        </label>
+        <button class="rounded-full bg-sentry-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500">
+            Send Command
+        </button>
+        <div id="command-result">{% include "partials/command_result.html" with result=None %}</div>
+    </form>
+    <aside class="panel">
+        <div class="panel-header">
+            <h2>Score Gauge</h2>
+            <span class="text-xs text-slate-400">Thresholds at 0.25 and 0.72</span>
+        </div>
+        <div x-data="{ score: 0.0 }" @sentinel-score.window="score = $event.detail.score" class="flex flex-col items-center">
+            <div class="gauge" :style="`--score:${score}`">
+                <div class="gauge-inner">
+                    <span class="font-mono text-4xl" x-text="(score * 100).toFixed(1) + '%'"></span>
+                </div>
+            </div>
+            <p class="mt-5 text-center text-sm text-slate-400">Green ≤ τ_clear, amber between thresholds, red at τ_block and above.</p>
+        </div>
+    </aside>
+</section>
+
+<section class="mt-6 panel">
+    <div class="panel-header">
+        <h2>Launch Demo Attack</h2>
+        <span class="text-xs text-slate-400">Asynchronous Celery scenario runner</span>
+    </div>
+    <form class="flex flex-col gap-4 md:flex-row" hx-post="/api/v1/demo/attack/" hx-target="#demo-result" hx-swap="innerHTML">
+        {% csrf_token %}
+        <select name="scenario" class="field-input">
+            <option value="insider_threat">Insider Threat</option>
+            <option value="credential_theft">Credential Theft</option>
+            <option value="evasion">Evasion</option>
+            <option value="model_b_compromise">Model B Compromise</option>
+        </select>
+        <button class="rounded-full bg-sentry-red px-5 py-3 text-sm font-semibold text-white">Launch Attack</button>
+    </form>
+    <div id="demo-result" class="mt-4 text-sm text-slate-400"></div>
+</section>
+{% endblock %}

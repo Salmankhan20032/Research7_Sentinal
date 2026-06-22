@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block page_title %}Worker Sessions{% endblock %}
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h2>Active and Historical Sessions</h2>
+        <span class="text-xs text-slate-400">Mode transitions and scores</span>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="text-slate-400">
+                <tr>
+                    <th class="pb-3">Worker</th>
+                    <th class="pb-3">IP</th>
+                    <th class="pb-3">Mode</th>
+                    <th class="pb-3">Score</th>
+                    <th class="pb-3">Commands</th>
+                    <th class="pb-3">Last Seen</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-sentry-line">
+                {% for session in sessions %}
+                    {% include "partials/session_row.html" %}
+                {% empty %}
+                <tr><td colspan="6" class="py-5 text-slate-500">No sessions recorded.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

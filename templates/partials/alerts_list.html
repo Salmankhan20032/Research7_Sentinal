@@ -1,0 +1,16 @@
+<div class="space-y-3">
+    {% for alert in alerts %}
+        <article class="rounded-2xl border border-sentry-line bg-black/15 p-4">
+            <div class="flex items-center justify-between">
+                <span class="badge badge-{{ alert.severity }}">{{ alert.severity }}</span>
+                <form method="post" action="/api/v1/alerts/{{ alert.id }}/ack/">
+                    {% csrf_token %}
+                    <button class="text-xs text-slate-400">Acknowledge</button>
+                </form>
+            </div>
+            <p class="mt-3 text-sm text-slate-200">{{ alert.message }}</p>
+        </article>
+    {% empty %}
+        <p class="text-slate-500">No active alerts.</p>
+    {% endfor %}
+</div>

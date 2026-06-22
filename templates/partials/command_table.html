@@ -1,0 +1,28 @@
+<div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+        <thead class="text-slate-400">
+            <tr>
+                <th class="pb-3">Worker</th>
+                <th class="pb-3">Sensor</th>
+                <th class="pb-3">Type</th>
+                <th class="pb-3">Value</th>
+                <th class="pb-3">Score</th>
+                <th class="pb-3">Route</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-sentry-line">
+        {% for command in commands %}
+            <tr class="text-slate-200">
+                <td class="py-3">{{ command.session.worker_id }}</td>
+                <td class="py-3 font-mono">{{ command.sensor_id }}</td>
+                <td class="py-3">{{ command.command_type }}</td>
+                <td class="py-3 font-mono">{{ command.parameter_value }}</td>
+                <td class="py-3 font-mono">{{ command.suspicion_score|floatformat:3 }}</td>
+                <td class="py-3"><span class="badge badge-{{ command.routing }}">{{ command.routing }}</span></td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="6" class="py-4 text-slate-500">No commands yet.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

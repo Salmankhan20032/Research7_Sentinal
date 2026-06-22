@@ -1,0 +1,10 @@
+<tr class="text-slate-200">
+    <td class="py-4 font-medium">{{ session.worker_id }}</td>
+    <td class="py-4 font-mono text-xs">{{ session.ip_address }}</td>
+    <td class="py-4">
+        <span class="status-pill status-{{ session.mode }}">{{ session.mode }}</span>
+    </td>
+    <td class="py-4 font-mono">{{ session.suspicion_score|floatformat:3 }}</td>
+    <td class="py-4">{{ session.command_count }}</td>
+    <td class="py-4 text-xs text-slate-400">{{ session.last_seen }}</td>
+</tr>

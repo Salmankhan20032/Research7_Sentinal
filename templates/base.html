@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}SENTINEL{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sentry: {
+                            bg: "#0f1117",
+                            panel: "#1a1d26",
+                            line: "#2a3040",
+                            accent: "#7c3aed",
+                            teal: "#14b8a6",
+                            amber: "#f59e0b",
+                            red: "#ef4444"
+                        }
+                    },
+                    fontFamily: {
+                        mono: ["IBM Plex Mono", "monospace"],
+                        display: ["Space Grotesk", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="/static/sentinel/css/app.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-full bg-sentry-bg text-slate-100 font-sans">
+    <div class="min-h-screen grid lg:grid-cols-[260px_1fr]">
+        <aside class="border-r border-sentry-line bg-[radial-gradient(circle_at_top,#241b4b_0%,#171923_25%,#0f1117_72%)] px-6 py-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="font-display text-2xl tracking-[0.25em] text-white">SENTINEL</p>
+                    <p class="mt-1 text-xs uppercase tracking-[0.35em] text-slate-400">Industrial Trust Engine</p>
+                </div>
+                <span class="rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.3em] {% if system_status == 'alert' %}border-red-500/40 text-red-300 glow-red{% else %}border-teal-500/40 text-teal-300 glow-teal{% endif %}">
+                    {{ system_status }}
+                </span>
+            </div>
+            <nav class="mt-10 space-y-2 text-sm">
+                <a href="/" class="nav-link">Dashboard</a>
+                <a href="/sessions/" class="nav-link">Sessions</a>
+                <a href="/#sensor-grid" class="nav-link">Sensors</a>
+                <a href="/forensic/" class="nav-link">Forensic Log</a>
+                <a href="/demo/" class="nav-link">Demo Mode</a>
+                <a href="/api/v1/stats/" class="nav-link">API Docs</a>
+            </nav>
+            <div class="mt-10 rounded-2xl border border-sentry-line bg-sentry-panel/80 p-4">
+                <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Open Alerts</p>
+                <p class="mt-3 font-mono text-4xl text-white">{{ unacked_alert_count }}</p>
+            </div>
+        </aside>
+        <main class="px-4 py-5 lg:px-8">
+            <header class="mb-6 flex items-center justify-between rounded-2xl border border-sentry-line bg-sentry-panel/60 px-5 py-4 backdrop-blur">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.35em] text-slate-500">Operations View</p>
+                    <h1 class="mt-1 font-display text-2xl text-white">{% block page_title %}Dashboard{% endblock %}</h1>
+                </div>
+                <div x-data="{ open: false }" class="relative">
+                    <button @click="open = !open" class="rounded-full border border-sentry-line px-4 py-2 text-sm text-slate-200">
+                        Notifications
+                    </button>
+                    <div x-show="open" x-transition class="absolute right-0 mt-3 w-72 rounded-2xl border border-sentry-line bg-sentry-panel p-4 shadow-2xl">
+                        <p class="text-sm text-slate-300">Unacknowledged alerts: {{ unacked_alert_count }}</p>
+                    </div>
+                </div>
+            </header>
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    <div id="toast-stack" class="fixed bottom-4 right-4 z-50 space-y-3"></div>
+    <script src="/static/sentinel/js/charts.js"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

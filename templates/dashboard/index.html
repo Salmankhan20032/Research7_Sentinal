@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block page_title %}Operations Dashboard{% endblock %}
+{% block content %}
+<section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div class="kpi-card"><span>Detection Accuracy</span><strong>{{ stats.accuracy }}%</strong></div>
+    <div class="kpi-card"><span>Active Sessions</span><strong>{{ stats.active_sessions }}</strong></div>
+    <div class="kpi-card"><span>Threats Blocked Today</span><strong>{{ stats.threats_blocked }}</strong></div>
+    <div class="kpi-card"><span>Avg Latency</span><strong>{{ stats.avg_latency }}ms</strong></div>
+</section>
+
+<section class="mt-6 grid gap-6 xl:grid-cols-[1.55fr_1fr]">
+    <div id="sensor-grid" class="panel">
+        <div class="panel-header">
+            <h2>Sensor Grid</h2>
+            <span class="text-xs text-slate-400">HTMX live refresh every 2s</span>
+        </div>
+        <div
+            id="sensor-grid-body"
+            hx-get="/partials/sensors/"
+            hx-trigger="load, every 2s"
+            hx-swap="innerHTML"
+        >
+            {% include "partials/sensor_grid.html" %}
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header">
+            <h2>Live Score Timeline</h2>
+            <span class="text-xs text-slate-400">Realtime + fallback polling</span>
+        </div>
+        <canvas id="scoreTimeline" class="h-[360px] w-full"></canvas>
+    </div>
+</section>
+
+<section class="mt-6 grid gap-6 xl:grid-cols-[1.3fr_1fr]">
+    <div class="panel">
+        <div class="panel-header">
+            <h2>Recent Commands</h2>
+            <span class="text-xs text-slate-400">Last 20 decisions</span>
+        </div>
+        <div
+            id="command-table"
+            hx-get="/partials/commands/"
+            hx-trigger="load, every 5s"
+            hx-swap="innerHTML"
+        >
+            {% include "partials/command_table.html" %}
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header">
+            <h2>Active Alerts</h2>
+            <span class="text-xs text-slate-400">Immediate operator attention</span>
+        </div>
+        <div
+            id="alerts-list"
+            hx-get="/partials/alerts/"
+            hx-trigger="load, every 5s"
+            hx-swap="innerHTML"
+        >
+            {% include "partials/alerts_list.html" %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+    window.SENTINEL_CHART_BOOT = {
+        labels: {{ chart_labels|safe }},
+        points: {{ chart_points|safe }}
+    };
+</script>
+{% endblock %}

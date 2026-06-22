@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block page_title %}Forensic Log{% endblock %}
+{% block content %}
+<section class="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+    <div class="panel">
+        <div class="panel-header">
+            <h2>Evidence Timeline</h2>
+            <span class="text-xs text-slate-400">{% if session %}{{ session.worker_id }}{% else %}No session selected{% endif %}</span>
+        </div>
+        <div class="space-y-4">
+            {% for log in logs %}
+            <article class="rounded-2xl border border-sentry-line bg-black/10 p-4">
+                <div class="flex items-center justify-between">
+                    <span class="badge badge-amber">{{ log.event_type }}</span>
+                    <span class="font-mono text-xs text-slate-400">{{ log.timestamp }}</span>
+                </div>
+                <details class="mt-3">
+                    <summary class="cursor-pointer text-sm text-slate-300">Evidence JSON</summary>
+                    <pre class="mt-3 overflow-x-auto rounded-xl bg-black/25 p-3 text-xs text-slate-200">{{ log.evidence_json|safe }}</pre>
+                </details>
+            </article>
+            {% empty %}
+            <p class="text-slate-500">No forensic evidence available yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header">
+            <h2>Score Progression</h2>
+            <span class="text-xs text-slate-400">Review escalation behavior</span>
+        </div>
+        <canvas id="scoreTimeline" class="h-[360px] w-full"></canvas>
+        {% if session %}
+        <a href="/api/v1/forensic/{{ session.id }}/" class="mt-4 inline-flex rounded-full border border-sentry-line px-4 py-2 text-sm text-slate-200">
+            Export as JSON
+        </a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,21 @@
+<article class="rounded-2xl border border-sentry-line bg-black/15 p-4">
+    <div class="flex items-start justify-between">
+        <div>
+            <p class="text-xs uppercase tracking-[0.3em] text-slate-500">{{ sensor.sensor_id }}</p>
+            <h3 class="mt-2 text-lg text-white">{{ sensor.sensor_name }}</h3>
+        </div>
+        <span class="rounded-full px-3 py-1 text-xs {% if sensor.current_value < sensor.min_safe or sensor.current_value > sensor.max_safe %}badge badge-red{% else %}badge badge-teal{% endif %}">
+            {% if sensor.current_value < sensor.min_safe or sensor.current_value > sensor.max_safe %}out-of-range{% else %}stable{% endif %}
+        </span>
+    </div>
+    <p class="mt-6 font-mono text-4xl text-white">{{ sensor.current_value }} <span class="text-sm text-slate-500">{{ sensor.unit }}</span></p>
+    <div class="mt-5">
+        <div class="mb-2 flex justify-between text-xs text-slate-500">
+            <span>{{ sensor.min_safe }}</span>
+            <span>{{ sensor.max_safe }}</span>
+        </div>
+        <div class="h-2 rounded-full bg-slate-800">
+            <div class="h-2 rounded-full bg-gradient-to-r from-teal-500 via-amber-400 to-red-500" style="width:{% widthratio sensor.current_value sensor.max_safe 100 %}%"></div>
+        </div>
+    </div>
+</article>
