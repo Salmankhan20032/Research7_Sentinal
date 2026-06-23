@@ -3,38 +3,21 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
+
+	// Kendi yazdığımız config paketini projemize dahil ediyoruz
+	"sentinel-model-b/internal/config"
 )
 
 func main() {
-	// env içerisindeki değişkenlere göre değiştirebiliriz
-	modelAURL := os.Getenv("MODEL_A_URL")
-	plcURL := os.Getenv("PLC_URL")
-
-	// Eğer yoksa da local olsun
-	if modelAURL == "" {
-		log.Println("UYARI: MODEL_A_URL çevresel değişkeni bulunamadı. Varsayılan değer atanıyor: http://localhost:8000")
-		modelAURL = "http://localhost:8000"
-	}
-	if plcURL == "" {
-		log.Println("UYARI: PLC_URL çevresel değişkeni bulunamadı. Varsayılan değer atanıyor: http://localhost:5020")
-		plcURL = "http://localhost:5020"
-	}
-
-	// Print
 	fmt.Println("SENTINEL Model B (Public Broker) Başlatılıyor...")
-	fmt.Printf("Model A (Trust Engine) Adresi: %s\n", modelAURL)
-	fmt.Printf("PLC (Sensor Controller) Adresi: %s\n", plcURL)
+
+	// Konfigürasyonları yükle
+	cfg := config.Load()
+
+	// Yüklenen ayarları kontrol amaçlı ekrana basıyoruz
+	log.Printf("Dinlenilecek Port : %s\n", cfg.BrokerPort)
+	log.Printf("Model A Adresi    : %s\n", cfg.ModelA_URL)
+	log.Printf("PLC Adresi        : %s\n", cfg.PLC_URL)
+
+	fmt.Println("Sistem konfigürasyonları başarıyla yüklendi. Hazır.")
 }
-
-/*
-
-package main
-
-import "fmt"
-
-func main() {
-    fmt.Println("SENTINEL Model B (Public Broker) Başlatılıyor...")
-}
-
-*/
