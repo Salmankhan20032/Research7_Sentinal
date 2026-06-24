@@ -1,23 +1,52 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"log"
+	"net/http"
 
-	// Kendi yazdığımız config paketini projemize dahil ediyoruz
 	"sentinel-model-b/internal/config"
+	"sentinel-model-b/internal/hub"
+	"sentinel-model-b/internal/ws"
 )
 
 func main() {
-	fmt.Println("SENTINEL Model B (Public Broker) Başlatılıyor...")
+	log.Println("[SENTINEL] Model B (Public Broker) başlatılıyor...")
 
-	// Konfigürasyonları yükle
+	// 1. Konfigürasyonu yükle
 	cfg := config.Load()
+	log.Printf("[CONFIG] Port: %s | Model A: %s | PLC: %s",
+		cfg.BrokerPort, cfg.ModelA_URL, cfg.PLC_URL)
 
-	// Yüklenen ayarları kontrol amaçlı ekrana basıyoruz
-	log.Printf("Dinlenilecek Port : %s\n", cfg.BrokerPort)
-	log.Printf("Model A Adresi    : %s\n", cfg.ModelA_URL)
-	log.Printf("PLC Adresi        : %s\n", cfg.PLC_URL)
+	// 2. Hub'ı oluştur ve arka planda çalıştır
+	h := hub.NewHub()
+	go h.Run()
+	log.Println("[HUB] Bağlantı havuzu başlatıldı.")
 
-	fmt.Println("Sistem konfigürasyonları başarıyla yüklendi. Hazır.")
+	// 3. HTTP Router'ı kur
+	mux := http.NewServeMux()
+
+	// WebSocket telemetri endpoint'i
+	mux.HandleFunc("/ws/telemetry", func(w http.ResponseWriter, r *http.Request) {
+		ws.ServeWs(h, w, r)
+	})
+
+	// Sağlık kontrolü endpoint'i (Docker Compose healthcheck için)
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "ok",
+			"service": "sentinel-model-b",
+		})
+	})
+
+	// 4. Sunucuyu başlat (blocking call)
+	addr := ":" + cfg.BrokerPort
+	log.Printf("[SERVER] Sunucu dinleniyor → ws://localhost%s/ws/telemetry", addr)
+	log.Printf("[SERVER] Sağlık kontrolü → http://localhost%s/health", addr)
+
+	if err := http.ListenAndServe(addr, mux); err != nil {
+		log.Fatalf("[SERVER] Sunucu başlatılamadı: %v", err)
+	}
 }
