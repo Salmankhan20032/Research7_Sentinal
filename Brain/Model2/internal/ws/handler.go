@@ -7,19 +7,18 @@ import (
 	"time"
 
 	"sentinel-model-b/internal/hub"
+	"sentinel-model-b/internal/modela"
 
 	"github.com/gorilla/websocket"
 )
 
 const (
-	writeWait      = 10 * time.Second    // Bir yazma işleminin maksimum süresi
-	pongWait       = 60 * time.Second    // İstemciden pong bekleme süresi
-	pingPeriod     = (pongWait * 9) / 10 // Ping gönderme aralığı (pongWait'in %90'ı)
-	maxMessageSize = 4096                // Bayt cinsinden maksimum mesaj boyutu
+	writeWait      = 10 * time.Second
+	pongWait       = 60 * time.Second
+	pingPeriod     = (pongWait * 9) / 10
+	maxMessageSize = 4096
 )
 
-// upgrader, gelen HTTP bağlantısını WebSocket protokolüne yükseltir.
-// CheckOrigin geliştirme aşamasında herkese açık; 6. Aşamada kısıtlanacak.
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -28,19 +27,17 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-// readPump, istemciden sürekli mesaj okur.
-// Bağlantı koptuğunda veya hata oluştuğunda hub'a bildirim yapar ve temizlik yapar.
-func readPump(c *hub.Client, h *hub.Hub, conn *websocket.Conn) {
+// readPump, istemciden sürekli mesaj okur ve her paketi Model A'ya iletir.
+func readPump(c *hub.Client, h *hub.Hub, conn *websocket.Conn, modelA *modela.Client) {
 	defer func() {
 		h.Unregister <- c
 		conn.Close()
-		log.Printf("[WS] Bağlantı kapandı. Aktif istemci sayısı güncelleniyor.")
+		log.Println("[WS] Bağlantı kapandı.")
 	}()
 
 	conn.SetReadLimit(maxMessageSize)
 	conn.SetReadDeadline(time.Now().Add(pongWait))
 	conn.SetPongHandler(func(string) error {
-		// Her pong geldiğinde deadline'ı sıfırla → bağlantı canlı
 		conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
@@ -57,23 +54,55 @@ func readPump(c *hub.Client, h *hub.Hub, conn *websocket.Conn) {
 			break
 		}
 
-		// Gelen ham veriyi TelemetryPacket struct'ına dönüştür
+		// 1. Ham veriyi TelemetryPacket struct'ına dönüştür
 		var packet TelemetryPacket
 		if err := json.Unmarshal(message, &packet); err != nil {
 			log.Printf("[WS] Geçersiz telemetri paketi: %v", err)
-			continue // Hatalı paketi atla, bağlantıyı kesme
+			continue
 		}
 
 		log.Printf("[WS] Telemetri alındı → Cihaz: %s | Tip: %s | Okuma Sayısı: %d",
 			packet.DeviceID, packet.SensorType, len(packet.Readings))
 
-		// Paketi tüm bağlı istemcilere yayınla (UI dashboard için)
+		// 2. TelemetryPacket → InferenceRequest dönüşümü
+		req := modela.InferenceRequest{
+			DeviceID:   packet.DeviceID,
+			SensorType: packet.SensorType,
+			Timestamp:  packet.Timestamp,
+			Readings:   packet.Readings,
+		}
+
+		// 3. Model A'ya gönder — goroutine içinde çalıştır, bağlantıyı bloklamaz
+		go func(r modela.InferenceRequest) {
+			resp, err := modelA.Score(r)
+			if err != nil {
+				log.Printf("[MODELA] Skor alınamadı (Cihaz: %s): %v", r.DeviceID, err)
+				return
+			}
+
+			// 4. Sonucu logla — ilerleyen aşamada komut yönlendirmede kullanılacak
+			log.Printf("[MODELA] Karar → Cihaz: %s | Skor: %.4f | Token: %s... | Expires: %d",
+				r.DeviceID,
+				resp.SuspicionScore,
+				safeTokenPrefix(resp.HMACToken),
+				resp.ExpiresAt,
+			)
+		}(req)
+
+		// 5. Ham paketi UI dashboard'a yayınla
 		h.Broadcast <- message
 	}
 }
 
-// writePump, sunucudan istemciye mesaj gönderir.
-// Ticker ile düzenli ping atarak bağlantının canlı olup olmadığını kontrol eder.
+// safeTokenPrefix, token boş olsa bile güvenli biçimde ilk 8 karakteri döner.
+func safeTokenPrefix(token string) string {
+	if len(token) < 8 {
+		return token
+	}
+	return token[:8]
+}
+
+// writePump, sunucudan istemciye mesaj gönderir ve ping/pong ile canlılık kontrolü yapar.
 func writePump(c *hub.Client, conn *websocket.Conn) {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
@@ -86,7 +115,6 @@ func writePump(c *hub.Client, conn *websocket.Conn) {
 		case message, ok := <-c.Send:
 			conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
-				// Hub kanalı kapattı → istemciye kapanma mesajı gönder
 				conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
@@ -98,16 +126,15 @@ func writePump(c *hub.Client, conn *websocket.Conn) {
 		case <-ticker.C:
 			conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				log.Printf("[WS] Ping gönderilemedi, bağlantı kopmuş olabilir: %v", err)
+				log.Printf("[WS] Ping gönderilemedi: %v", err)
 				return
 			}
 		}
 	}
 }
 
-// ServeWs, gelen HTTP isteğini WebSocket'e yükseltir,
-// yeni istemciyi hub'a kaydeder ve pump goroutine'lerini başlatır.
-func ServeWs(h *hub.Hub, w http.ResponseWriter, r *http.Request) {
+// ServeWs, HTTP bağlantısını WebSocket'e yükseltir ve pump goroutine'lerini başlatır.
+func ServeWs(h *hub.Hub, w http.ResponseWriter, r *http.Request, modelA *modela.Client) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("[WS] Upgrade hatası: %v", err)
@@ -122,9 +149,6 @@ func ServeWs(h *hub.Hub, w http.ResponseWriter, r *http.Request) {
 	h.Register <- client
 	log.Printf("[WS] Yeni bağlantı kabul edildi → %s", r.RemoteAddr)
 
-	// Her iki pump ayrı goroutine'de çalışır:
-	// readPump  → istemci → sunucu yönü
-	// writePump → sunucu  → istemci yönü
 	go writePump(client, conn)
-	go readPump(client, h, conn)
+	go readPump(client, h, conn, modelA)
 }

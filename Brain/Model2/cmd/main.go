@@ -7,6 +7,7 @@ import (
 
 	"sentinel-model-b/internal/config"
 	"sentinel-model-b/internal/hub"
+	"sentinel-model-b/internal/modela"
 	"sentinel-model-b/internal/ws"
 )
 
@@ -18,20 +19,24 @@ func main() {
 	log.Printf("[CONFIG] Port: %s | Model A: %s | PLC: %s",
 		cfg.BrokerPort, cfg.ModelA_URL, cfg.PLC_URL)
 
-	// 2. Hub'ı oluştur ve arka planda çalıştır
+	// 2. Model A istemcisini oluştur
+	modelAClient := modela.NewClient(cfg.ModelA_URL)
+	log.Printf("[MODELA] İstemci hazır → %s", cfg.ModelA_URL)
+
+	// 3. Hub'ı oluştur ve arka planda çalıştır
 	h := hub.NewHub()
 	go h.Run()
 	log.Println("[HUB] Bağlantı havuzu başlatıldı.")
 
-	// 3. HTTP Router'ı kur
+	// 4. HTTP Router'ı kur
 	mux := http.NewServeMux()
 
 	// WebSocket telemetri endpoint'i
 	mux.HandleFunc("/ws/telemetry", func(w http.ResponseWriter, r *http.Request) {
-		ws.ServeWs(h, w, r)
+		ws.ServeWs(h, w, r, modelAClient)
 	})
 
-	// Sağlık kontrolü endpoint'i (Docker Compose healthcheck için)
+	// Sağlık kontrolü endpoint'i
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -41,7 +46,7 @@ func main() {
 		})
 	})
 
-	// 4. Sunucuyu başlat (blocking call)
+	// 5. Sunucuyu başlat
 	addr := ":" + cfg.BrokerPort
 	log.Printf("[SERVER] Sunucu dinleniyor → ws://localhost%s/ws/telemetry", addr)
 	log.Printf("[SERVER] Sağlık kontrolü → http://localhost%s/health", addr)
