@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"sentinel-model-b/internal/command"
 	"sentinel-model-b/internal/config"
 	"sentinel-model-b/internal/hub"
 	"sentinel-model-b/internal/modela"
@@ -23,18 +24,29 @@ func main() {
 	modelAClient := modela.NewClient(cfg.ModelA_URL)
 	log.Printf("[MODELA] İstemci hazır → %s", cfg.ModelA_URL)
 
-	// 3. Hub'ı oluştur ve arka planda çalıştır
+	// 3. Proxy'yi oluştur (PLC + Honeypot)
+	proxy := command.NewProxy(cfg.PLC_URL, cfg.HoneypotURL)
+	log.Printf("[PROXY] PLC: %s | Honeypot: %s", cfg.PLC_URL, cfg.HoneypotURL)
+
+	// 4. Komut handler'ını oluştur
+	cmdHandler := command.NewHandler(modelAClient, proxy)
+	log.Println("[CMD] Komut handler'ı hazır.")
+
+	// 5. Hub'ı oluştur ve arka planda çalıştır
 	h := hub.NewHub()
 	go h.Run()
 	log.Println("[HUB] Bağlantı havuzu başlatıldı.")
 
-	// 4. HTTP Router'ı kur
+	// 6. HTTP Router'ı kur
 	mux := http.NewServeMux()
 
 	// WebSocket telemetri endpoint'i
 	mux.HandleFunc("/ws/telemetry", func(w http.ResponseWriter, r *http.Request) {
 		ws.ServeWs(h, w, r, modelAClient)
 	})
+
+	// Komut yönlendirme endpoint'i
+	mux.HandleFunc("/api/command", cmdHandler.ServeHTTP)
 
 	// Sağlık kontrolü endpoint'i
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -46,10 +58,11 @@ func main() {
 		})
 	})
 
-	// 5. Sunucuyu başlat
+	// 7. Sunucuyu başlat
 	addr := ":" + cfg.BrokerPort
 	log.Printf("[SERVER] Sunucu dinleniyor → ws://localhost%s/ws/telemetry", addr)
-	log.Printf("[SERVER] Sağlık kontrolü → http://localhost%s/health", addr)
+	log.Printf("[SERVER] Komut endpoint'i → http://localhost%s/api/command", addr)
+	log.Printf("[SERVER] Sağlık kontrolü  → http://localhost%s/health", addr)
 
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Fatalf("[SERVER] Sunucu başlatılamadı: %v", err)
