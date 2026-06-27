@@ -2,7 +2,6 @@ package command
 
 import (
 	"encoding/json"
-	"log"
 	"log/slog"
 	"net/http"
 	"time"
@@ -45,7 +44,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 1. İstek gövdesini parse et
 	var req WriteRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("[CMD] Geçersiz istek gövdesi: %v", err)
+		slog.Error("command_invalid_body", "error", err)
+
 		http.Error(w, "Geçersiz JSON", http.StatusBadRequest)
 		return
 	}
@@ -53,7 +53,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// 2. Zorunlu alanları doğrula
 	if req.DeviceID == "" || req.Register == "" {
-		log.Printf("[CMD] Eksik alan → DeviceID: %q | Register: %q", req.DeviceID, req.Register)
+		slog.Warn("command_missing_fields", "device_id", req.DeviceID, "register", req.Register)
+
 		http.Error(w, "device_id ve register zorunludur", http.StatusBadRequest)
 		return
 	}
@@ -87,8 +88,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[CMD] Model A kararı → Suspicion: %.4f | Eşik: %.2f",
-		inferenceResp.SuspicionScore, suspicionThreshold)
+	slog.Info("command_scored", "suspicion_score", inferenceResp.SuspicionScore, "threshold", suspicionThreshold)
 
 	// 4. Suspicion score'a göre yönlendirme kararı ver
 	var routed string
@@ -96,14 +96,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if inferenceResp.SuspicionScore > suspicionThreshold {
 		// ⚠️  Şüpheli komut → Honeypot'a yönlendir
-		log.Printf("[CMD] ⚠️  Şüpheli komut tespit edildi (%.4f > %.2f) → Honeypot'a yönlendiriliyor",
-			inferenceResp.SuspicionScore, suspicionThreshold)
+
+		slog.Warn("command_routed_honeypot", "suspicion_score", inferenceResp.SuspicionScore)
 		routeErr = h.proxy.SendToHoneypot(req, inferenceResp.HMACToken, inferenceResp.ExpiresAt)
 		routed = "honeypot"
 	} else {
 		// ✅ Güvenli komut → PLC'ye ilet
-		log.Printf("[CMD] ✅ Güvenli komut onaylandı (%.4f ≤ %.2f) → PLC'ye iletiliyor",
-			inferenceResp.SuspicionScore, suspicionThreshold)
+
+		slog.Info("command_routed_plc", "suspicion_score", inferenceResp.SuspicionScore)
+
 		routeErr = h.proxy.SendToPLC(req, inferenceResp.HMACToken, inferenceResp.ExpiresAt)
 		routed = "plc"
 	}

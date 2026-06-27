@@ -1,0 +1,108 @@
+networks:
+  sentinel-net:
+    driver: bridge
+
+services:
+
+  model-b:
+    build:
+      context: ./Model2
+      dockerfile: Dockerfile
+    container_name: sentinel-model-b
+    env_file: ./Model2/.env
+    ports:
+      - "8080:8080"
+    networks:
+      - sentinel-net
+    depends_on:
+      modela:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  modela:
+    image: python:3.11-slim
+    container_name: sentinel-modela
+    command:
+      - python3
+      - "-c"
+      - |
+        import http.server, json, random, time, hashlib, hmac
+        class H(http.server.BaseHTTPRequestHandler):
+            def do_POST(self):
+                n = int(self.headers['Content-Length'])
+                self.rfile.read(n)
+                self.send_response(200)
+                self.send_header('Content-Type','application/json')
+                self.end_headers()
+                token = hmac.new(b'secret', str(time.time()).encode(), hashlib.sha256).hexdigest()
+                self.wfile.write(json.dumps({'suspicion_score':random.random(),'hmac_token':token,'expires_at':int(time.time()*1000)+60000}).encode())
+            def do_GET(self):
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b'{"status":"ok"}')
+            def log_message(self, *a): pass
+        http.server.HTTPServer(('0.0.0.0',8000),H).serve_forever()
+    ports:
+      - "8000:8000"
+    networks:
+      - sentinel-net
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  plc_sim:
+    image: python:3.11-slim
+    container_name: sentinel-plc-sim
+    command:
+      - python3
+      - "-c"
+      - |
+        import http.server, json
+        class H(http.server.BaseHTTPRequestHandler):
+            def do_POST(self):
+                n = int(self.headers['Content-Length'])
+                data = self.rfile.read(n)
+                print('[PLC] Yazma komutu alindi:', data.decode())
+                self.send_response(200)
+                self.send_header('Content-Type','application/json')
+                self.end_headers()
+                self.wfile.write(b'{"status":"written"}')
+            def log_message(self, *a): pass
+        http.server.HTTPServer(('0.0.0.0',5020),H).serve_forever()
+    ports:
+      - "5020:5020"
+    networks:
+      - sentinel-net
+
+  honeypot:
+    image: python:3.11-slim
+    container_name: sentinel-honeypot
+    command:
+      - python3
+      - "-c"
+      - |
+        import http.server, json
+        class H(http.server.BaseHTTPRequestHandler):
+            def do_POST(self):
+                n = int(self.headers['Content-Length'])
+                data = self.rfile.read(n)
+                print('[HONEYPOT] Sahte yazma alindi:', data.decode())
+                self.send_response(200)
+                self.send_header('Content-Type','application/json')
+                self.end_headers()
+                self.wfile.write(b'{"status":"written"}')
+            def log_message(self, *a): pass
+        http.server.HTTPServer(('0.0.0.0',6000),H).serve_forever()
+    ports:
+      - "6000:6000"
+    networks:
+      - sentinel-net
