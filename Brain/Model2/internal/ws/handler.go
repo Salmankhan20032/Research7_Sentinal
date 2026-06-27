@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"sentinel-model-b/internal/hub"
@@ -19,11 +20,39 @@ const (
 	maxMessageSize = 4096
 )
 
+// allowedOrigins, WebSocket bağlantısı kabul edilecek kaynakların listesi.
+// Ortam değişkeninden okunur; Docker ortamında iç servisler ve UI adresi buraya eklenir.
+var allowedOrigins = func() map[string]bool {
+	origins := map[string]bool{
+		"http://localhost:3000": true, // Geliştirme — React/UI
+		"http://localhost:8080": true, // Geliştirme — aynı host test
+		"http://dashboard:3000": true, // Docker ağı — UI servisi
+	}
+	// Ortam değişkeninden ek origin eklenebilir
+	if extra := os.Getenv("ALLOWED_ORIGIN"); extra != "" {
+		origins[extra] = true
+	}
+	return origins
+}()
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		return true
+		origin := r.Header.Get("Origin")
+
+		// Origin header yoksa (örn. doğrudan curl/wscat) geliştirme modunda izin ver
+		if origin == "" {
+			log.Println("[WS] Origin header yok — bağlantı kabul edildi (no-origin istemci)")
+			return true
+		}
+
+		if allowedOrigins[origin] {
+			return true
+		}
+
+		log.Printf("[WS] Reddedilen origin: %s", origin)
+		return false
 	},
 }
 

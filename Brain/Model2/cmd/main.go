@@ -1,70 +1,75 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"sentinel-model-b/internal/command"
 	"sentinel-model-b/internal/config"
 	"sentinel-model-b/internal/hub"
 	"sentinel-model-b/internal/modela"
-	"sentinel-model-b/internal/ws"
+	"sentinel-model-b/internal/router"
 )
 
 func main() {
 	log.Println("[SENTINEL] Model B (Public Broker) başlatılıyor...")
 
-	// 1. Konfigürasyonu yükle
+	// 1. Konfigürasyon
 	cfg := config.Load()
-	log.Printf("[CONFIG] Port: %s | Model A: %s | PLC: %s",
-		cfg.BrokerPort, cfg.ModelA_URL, cfg.PLC_URL)
+	log.Printf("[CONFIG] Port: %s | Model A: %s | PLC: %s | Honeypot: %s",
+		cfg.BrokerPort, cfg.ModelA_URL, cfg.PLC_URL, cfg.HoneypotURL)
 
-	// 2. Model A istemcisini oluştur
+	// 2. Bağımlılıkları oluştur
 	modelAClient := modela.NewClient(cfg.ModelA_URL)
-	log.Printf("[MODELA] İstemci hazır → %s", cfg.ModelA_URL)
-
-	// 3. Proxy'yi oluştur (PLC + Honeypot)
 	proxy := command.NewProxy(cfg.PLC_URL, cfg.HoneypotURL)
-	log.Printf("[PROXY] PLC: %s | Honeypot: %s", cfg.PLC_URL, cfg.HoneypotURL)
-
-	// 4. Komut handler'ını oluştur
 	cmdHandler := command.NewHandler(modelAClient, proxy)
-	log.Println("[CMD] Komut handler'ı hazır.")
-
-	// 5. Hub'ı oluştur ve arka planda çalıştır
 	h := hub.NewHub()
 	go h.Run()
 	log.Println("[HUB] Bağlantı havuzu başlatıldı.")
 
-	// 6. HTTP Router'ı kur
+	// 3. Router'ı kur
 	mux := http.NewServeMux()
+	router.Setup(mux, h, modelAClient, cmdHandler)
+	log.Println("[ROUTER] Route'lar kayıt edildi: /ws/telemetry | /api/command | /health")
 
-	// WebSocket telemetri endpoint'i
-	mux.HandleFunc("/ws/telemetry", func(w http.ResponseWriter, r *http.Request) {
-		ws.ServeWs(h, w, r, modelAClient)
-	})
-
-	// Komut yönlendirme endpoint'i
-	mux.HandleFunc("/api/command", cmdHandler.ServeHTTP)
-
-	// Sağlık kontrolü endpoint'i
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{
-			"status":  "ok",
-			"service": "sentinel-model-b",
-		})
-	})
-
-	// 7. Sunucuyu başlat
+	// 4. HTTP sunucusunu yapılandır
 	addr := ":" + cfg.BrokerPort
-	log.Printf("[SERVER] Sunucu dinleniyor → ws://localhost%s/ws/telemetry", addr)
-	log.Printf("[SERVER] Komut endpoint'i → http://localhost%s/api/command", addr)
-	log.Printf("[SERVER] Sağlık kontrolü  → http://localhost%s/health", addr)
-
-	if err := http.ListenAndServe(addr, mux); err != nil {
-		log.Fatalf("[SERVER] Sunucu başlatılamadı: %v", err)
+	srv := &http.Server{
+		Addr:         addr,
+		Handler:      mux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
+
+	// 5. Sunucuyu ayrı goroutine'de başlat
+	go func() {
+		log.Printf("[SERVER] Dinleniyor → http://localhost%s", addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("[SERVER] Başlatma hatası: %v", err)
+		}
+	}()
+
+	// 6. OS sinyallerini dinle (Ctrl+C → SIGINT, Docker stop → SIGTERM)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	received := <-quit
+	log.Printf("[SENTINEL] Sinyal alındı: %s — kapatılıyor...", received)
+
+	// 7. Graceful shutdown: 15 saniye içinde açık bağlantılar tamamlansın
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Printf("[SERVER] Zorla kapatılıyor: %v", err)
+	} else {
+		log.Println("[SERVER] Temiz kapatma tamamlandı.")
+	}
+
+	log.Println("[SENTINEL] Model B kapatıldı.")
 }

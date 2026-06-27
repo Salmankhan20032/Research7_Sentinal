@@ -2,6 +2,7 @@ package modela
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -157,4 +158,34 @@ func (c *Client) Score(req InferenceRequest) (*InferenceResponse, error) {
 	// Tüm denemeler başarısız
 	c.recordFailure()
 	return nil, fmt.Errorf("Model A'ya ulaşılamadı (%d deneme): %w", maxRetries+1, lastErr)
+}
+
+func (c *Client) Ping() (bool, string) {
+	c.mu.Lock()
+	cbOpen := c.state == stateOpen
+	c.mu.Unlock()
+
+	if cbOpen {
+		return false, "circuit_open"
+	}
+
+	req, err := http.NewRequest(http.MethodGet, c.baseURL+"/health", nil)
+	if err != nil {
+		return false, "request_build_error"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	req = req.WithContext(ctx)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return false, "unreachable"
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		return true, "ok"
+	}
+	return false, fmt.Sprintf("status_%d", resp.StatusCode)
 }
