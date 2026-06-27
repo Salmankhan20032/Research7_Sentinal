@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -64,11 +64,13 @@ func (c *Client) isAvailable() bool {
 	case stateOpen:
 		// Recovery süresi dolduysa yarı açık moda geç ve bir deneme yap
 		if time.Since(c.lastFailure) >= recoveryTimeout {
-			log.Println("[CIRCUIT] Yarı açık moda geçildi, deneme isteği gönderiliyor.")
+			slog.Warn("circuit_half_open")
+
 			c.state = stateHalfOpen
 			return true
 		}
-		log.Println("[CIRCUIT] Devre açık — Model A isteği engellendi.")
+		slog.Warn("circuit_open_blocked")
+
 		return false
 
 	case stateHalfOpen:
@@ -84,7 +86,8 @@ func (c *Client) recordSuccess() {
 	defer c.mu.Unlock()
 	c.state = stateClosed
 	c.failureCount = 0
-	log.Println("[CIRCUIT] İstek başarılı — devre kapalı durumda.")
+	slog.Info("circuit_closed")
+
 }
 
 // recordFailure, hata sayacını artırır; eşik aşılırsa devreyi açar.
@@ -95,8 +98,8 @@ func (c *Client) recordFailure() {
 	c.lastFailure = time.Now()
 	if c.failureCount >= failureThreshold {
 		c.state = stateOpen
-		log.Printf("[CIRCUIT] %d ardışık hata — devre açıldı. %s sonra tekrar denenecek.",
-			c.failureCount, recoveryTimeout)
+		slog.Error("circuit_opened", "failure_count", c.failureCount, "retry_after", recoveryTimeout.String())
+
 	}
 }
 
@@ -116,7 +119,8 @@ func (c *Client) Score(req InferenceRequest) (*InferenceResponse, error) {
 	var lastErr error
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		if attempt > 0 {
-			log.Printf("[CLIENT] Yeniden deneniyor (%d/%d)...", attempt, maxRetries)
+			slog.Info("modela_retry", "attempt", attempt, "max", maxRetries)
+
 			time.Sleep(retryDelay)
 		}
 
@@ -127,30 +131,34 @@ func (c *Client) Score(req InferenceRequest) (*InferenceResponse, error) {
 		)
 		if err != nil {
 			lastErr = err
-			log.Printf("[CLIENT] Model A isteği başarısız (deneme %d): %v", attempt+1, err)
+			slog.Warn("modela_attempt_failed", "attempt", attempt+1, "error", err)
+
 			continue
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
 			lastErr = fmt.Errorf("Model A beklenmeyen durum kodu: %d", resp.StatusCode)
-			log.Printf("[CLIENT] %v", lastErr)
+			slog.Warn("modela_bad_status", "error", lastErr)
+
 			continue
 		}
 
 		var inferenceResp InferenceResponse
 		if err := json.NewDecoder(resp.Body).Decode(&inferenceResp); err != nil {
 			lastErr = fmt.Errorf("yanıt çözümlenemedi: %w", err)
-			log.Printf("[CLIENT] %v", lastErr)
+			slog.Warn("modela_bad_status", "error", lastErr)
+
 			continue
 		}
 
 		// Başarılı — circuit breaker'ı sıfırla
 		c.recordSuccess()
-		log.Printf("[CLIENT] Model A yanıtı alındı → Suspicion: %.4f | Token: %s... | Expires: %d",
-			inferenceResp.SuspicionScore,
-			inferenceResp.HMACToken[:8],
-			inferenceResp.ExpiresAt,
+
+		slog.Info("modela_score_received",
+			"device_id", req.DeviceID, // req'i fonksiyona parametre olarak taşı veya logda kullan
+			"suspicion_score", inferenceResp.SuspicionScore,
+			"expires_at", inferenceResp.ExpiresAt,
 		)
 		return &inferenceResp, nil
 	}

@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,64 +12,71 @@ import (
 	"sentinel-model-b/internal/command"
 	"sentinel-model-b/internal/config"
 	"sentinel-model-b/internal/hub"
+	"sentinel-model-b/internal/logger"
+	"sentinel-model-b/internal/middleware"
 	"sentinel-model-b/internal/modela"
 	"sentinel-model-b/internal/router"
 )
 
 func main() {
-	log.Println("[SENTINEL] Model B (Public Broker) başlatılıyor...")
+	// 1. Logger'ı başlat — diğer her şeyden önce
+	logger.Init()
+	slog.Info("sentinel_starting", "service", "model-b", "version", "0.1.0")
 
-	// 1. Konfigürasyon
+	// 2. Konfigürasyon
 	cfg := config.Load()
-	log.Printf("[CONFIG] Port: %s | Model A: %s | PLC: %s | Honeypot: %s",
-		cfg.BrokerPort, cfg.ModelA_URL, cfg.PLC_URL, cfg.HoneypotURL)
+	slog.Info("config_loaded",
+		"port", cfg.BrokerPort,
+		"model_a_url", cfg.ModelA_URL,
+		"plc_url", cfg.PLC_URL,
+		"honeypot_url", cfg.HoneypotURL,
+	)
 
-	// 2. Bağımlılıkları oluştur
+	// 3. Bağımlılıklar
 	modelAClient := modela.NewClient(cfg.ModelA_URL)
 	proxy := command.NewProxy(cfg.PLC_URL, cfg.HoneypotURL)
 	cmdHandler := command.NewHandler(modelAClient, proxy)
 	h := hub.NewHub()
 	go h.Run()
-	log.Println("[HUB] Bağlantı havuzu başlatıldı.")
+	slog.Info("components_ready")
 
-	// 3. Router'ı kur
+	// 4. Router + RequestLogger middleware
 	mux := http.NewServeMux()
 	router.Setup(mux, h, modelAClient, cmdHandler)
-	log.Println("[ROUTER] Route'lar kayıt edildi: /ws/telemetry | /api/command | /health")
+	slog.Info("routes_registered",
+		"routes", []string{"/ws/telemetry", "/api/command", "/health"},
+	)
 
-	// 4. HTTP sunucusunu yapılandır
+	// 5. HTTP sunucusu
 	addr := ":" + cfg.BrokerPort
 	srv := &http.Server{
 		Addr:         addr,
-		Handler:      mux,
+		Handler:      middleware.RequestLogger(mux), // Tüm istekleri logla
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// 5. Sunucuyu ayrı goroutine'de başlat
 	go func() {
-		log.Printf("[SERVER] Dinleniyor → http://localhost%s", addr)
+		slog.Info("server_listening", "addr", addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("[SERVER] Başlatma hatası: %v", err)
+			slog.Error("server_failed", "error", err)
+			os.Exit(1)
 		}
 	}()
 
-	// 6. OS sinyallerini dinle (Ctrl+C → SIGINT, Docker stop → SIGTERM)
+	// 6. Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	received := <-quit
-	log.Printf("[SENTINEL] Sinyal alındı: %s — kapatılıyor...", received)
+	sig := <-quit
+	slog.Warn("shutdown_signal", "signal", sig.String())
 
-	// 7. Graceful shutdown: 15 saniye içinde açık bağlantılar tamamlansın
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Printf("[SERVER] Zorla kapatılıyor: %v", err)
+		slog.Error("shutdown_forced", "error", err)
 	} else {
-		log.Println("[SERVER] Temiz kapatma tamamlandı.")
+		slog.Info("shutdown_clean")
 	}
-
-	log.Println("[SENTINEL] Model B kapatıldı.")
 }

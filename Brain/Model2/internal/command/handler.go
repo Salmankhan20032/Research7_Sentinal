@@ -3,6 +3,7 @@ package command
 import (
 	"encoding/json"
 	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -57,8 +58,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[CMD] Komut alındı → Cihaz: %s | Register: %s | Değer: %.4f",
-		req.DeviceID, req.Register, req.Value)
+	slog.Info("command_received", "device_id", req.DeviceID, "register",
+		req.Register, "value", req.Value)
 
 	// 3. Model A'dan suspicion score ve HMAC token talep et
 	// Komut verisini InferenceRequest'e dönüştür
@@ -71,7 +72,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	inferenceResp, err := h.modelA.Score(inferenceReq)
 	if err != nil {
-		log.Printf("[CMD] Model A'dan skor alınamadı: %v", err)
+		slog.Error("command_score_failed", "device_id", req.DeviceID, "error", err)
+
 		// Model A erişilemezse güvenli taraf → komutu reddet
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusServiceUnavailable)
@@ -110,7 +112,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if routeErr != nil {
-		log.Printf("[CMD] Yönlendirme hatası (%s): %v", routed, routeErr)
+		slog.Error("command_route_error", "routed", routed, "error", routeErr)
+
 		w.WriteHeader(http.StatusBadGateway)
 		json.NewEncoder(w).Encode(WriteResponse{
 			Success:  false,
