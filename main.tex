@@ -168,17 +168,17 @@ s_{t+1} = \delta(s_t, c_t).
 
 \sentinel{} decouples public command ingress from physical state mutation by introducing a dual-namespace state transformation $(\psi_{\mathrm{live}}, \psi_{\mathrm{decoy}}^{(k)})$:
 \begin{align}
-s_{t+1}^{\mathrm{live}} &= \psi_{\mathrm{live}}(s_t^{\mathrm{live}}, c_t, T_t), \\
-s_{t+1}^{\mathrm{decoy}, k} &= \psi_{\mathrm{decoy}}^{(k)}(s_t^{\mathrm{decoy}, k}, c_t),
+s_{t+1}^{\mathrm{live}} &= \psi_{\mathrm{live}}\bigl(s_t^{\mathrm{live}}, c_t, T_t\bigr), \\
+s_{t+1}^{\mathrm{decoy},(k)} &= \psi_{\mathrm{decoy}}^{(k)}\bigl(s_t^{\mathrm{decoy},(k)}, c_t\bigr),
 \end{align}
 where $T_t$ is an HMAC-authenticated write capability, and $k \in \mathbb{N}$ denotes a session-isolated decoy namespace. The live state evolution $\psi_{\mathrm{live}}$ enforces the strict verification predicate:
-\begin{equation}
-\psi_{\mathrm{live}}(s_t^{\mathrm{live}}, c_t, T_t) =
-\begin{cases}
-\delta(s_t^{\mathrm{live}}, c_t), & \text{if } \VerifyCap(c_t, T_t, K_{\mathrm{epoch}}) = \mathsf{True}, \\[2pt]
+\begin{align}
+&\psi_{\mathrm{live}}\bigl(s_t^{\mathrm{live}}, c_t, T_t\bigr) \nonumber \\
+&\quad = \begin{cases}
+\delta(s_t^{\mathrm{live}}, c_t), & \text{if } \VerifyCap(c_t, T_t, K_{\mathrm{epoch}}) = \mathsf{True}, \\[3pt]
 s_t^{\mathrm{live}}, & \text{otherwise}.
 \end{cases}
-\end{equation}
+\end{align}
 
 \noindent\textbf{Intuitive Interpretation:} Physical plant actuators and setpoint registers update if and only if a fresh cryptographic capability token $T_t$ is verified at the OT gateway. If an unverified or suspicious command arrives, the live physical process state remains locked ($s_t^{\mathrm{live}}$), while the command is safely redirected to the session-isolated deception layer without causing physical plant disruption.
 
