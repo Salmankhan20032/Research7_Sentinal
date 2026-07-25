@@ -50,6 +50,18 @@
 \newcommand{\modelb}{Model~B}
 \newcommand{\modela}{Model~A}
 
+\DeclareMathOperator{\Sanitize}{Sanitize}
+\DeclareMathOperator{\Concat}{Concat}
+\DeclareMathOperator{\KDF}{KDF}
+\DeclareMathOperator{\Ser}{Ser}
+\DeclareMathOperator{\HMAC}{HMAC}
+\DeclareMathOperator{\VerifyCap}{VerifyCap}
+\DeclareMathOperator{\CheckFreshness}{CheckFreshness}
+\DeclareMathOperator{\InitDecoySession}{InitDecoySession}
+\DeclareMathOperator{\ForwardWriteToPLC}{ForwardWriteToPLC}
+\DeclareMathOperator{\AtomicAdd}{AtomicAdd}
+\DeclareMathOperator{\CTCompare}{CT\text{-}Compare}
+
 \begin{document}
 
 \title{SENTINEL: Evasion-Aware Trust Scoring, Deception, and Cryptographic Write Authorization for Industrial IoT}
@@ -161,9 +173,9 @@ s_{t+1}^{\mathrm{decoy}, k} &= \psi_{\mathrm{decoy}}^{(k)}(s_t^{\mathrm{decoy}, 
 \end{align}
 where $T_t$ is an HMAC-authenticated write capability, and $k \in \mathbb{N}$ denotes a session-isolated decoy namespace. The live state evolution $\psi_{\mathrm{live}}$ enforces the strict verification predicate:
 \begin{equation}
-\psi_{\mathrm{live}}(s_t^{\mathrm{live}}, c_t, T_t) = 
+\psi_{\mathrm{live}}(s_t^{\mathrm{live}}, c_t, T_t) =
 \begin{cases}
-\delta(s_t^{\mathrm{live}}, c_t), & \text{if } \mathsf{VerifyCap}(c_t, T_t, K_{\mathrm{epoch}}) = \mathsf{True},\\
+\delta(s_t^{\mathrm{live}}, c_t), & \text{if } \VerifyCap(c_t, T_t, K_{\mathrm{epoch}}) = \mathsf{True}, \\[2pt]
 s_t^{\mathrm{live}}, & \text{otherwise}.
 \end{cases}
 \end{equation}
@@ -210,7 +222,7 @@ A command passes through eight operational steps grouped into six logical stages
 \subsection{Command context and hard constraints}
 A normalized command at time $t$ is represented as
 \begin{equation}
- c_t = (u,r,d,o,v,n,t_i,t_e,p),
+ c_t = (u, r, d, o, v, n, t_i, t_e, p),
 \end{equation}
 where $u$ is the worker identity, $r$ the role, $d$ the target device or register, $o$ the operation, $v$ the value, $n$ a nonce, $t_i$ and $t_e$ the issue and expiry times, and $p$ the policy version. Before behavioral scoring, Model~A rejects malformed requests, stale identity contexts, role violations, unsafe values, and operations outside the target policy. Hard violations are never routed to the live process.
 
@@ -228,7 +240,7 @@ For each feature channel $j \in \{1,\dots,19\}$, the extraction operator $\Phi_j
 Concatenating these operators across all 19 feature channels yields the complete session summary vector:
 \begin{align}
 \Phi_j(S_t) &= \begin{bmatrix} \mu_j & \sigma_j & \min_j & \max_j & \Delta_j & \nabla_j & Q1_j & Q3_j \end{bmatrix}^T, \\
-\phi(S_t) &= \operatorname{Concat}\big( \Phi_1(S_t), \Phi_2(S_t), \dots, \Phi_{19}(S_t) \big) \in \mathbb{R}^{152}.
+\phi(S_t) &= \Concat\bigl( \Phi_1(S_t), \Phi_2(S_t), \dots, \Phi_{19}(S_t) \bigr) \in \mathbb{R}^{152}.
 \end{align}
 
 Table~\ref{tab:features} groups the command-level evidence by security purpose.
@@ -272,35 +284,35 @@ The deployed reference scorer is a 160-tree random forest with maximum depth 15,
 
 Let $P(y=k\mid \phi(S_t))$ be the class probability for the current session summary $\phi(S_t)$. The maliciousness score is
 \begin{equation}
- s_t = 1-P(y=\text{normal}\mid \phi(S_t)).
+ s_t = 1 - P(y = \mathrm{normal} \mid \phi(S_t)).
 \end{equation}
 The response is
 \begin{equation}
- D(s_t)=
+ D(s_t) =
  \begin{cases}
- \text{approve}, & s_t < \tau_{\mathrm{clear}},\\
- \text{deceive}, & \tau_{\mathrm{clear}} \le s_t < \tau_{\mathrm{block}},\\
- \text{block}, & s_t \ge \tau_{\mathrm{block}}.
+ \mathrm{approve}, & s_t < \tau_{\mathrm{clear}}, \\[2pt]
+ \mathrm{deceive}, & \tau_{\mathrm{clear}} \le s_t < \tau_{\mathrm{block}}, \\[2pt]
+ \mathrm{block}, & s_t \ge \tau_{\mathrm{block}}.
  \end{cases}
 \end{equation}
 Thresholds are selected on the validation set under a constraint that immediate false blocks remain below 2\%. Candidate pairs are ranked using
 \begin{equation}
-U=1.6C_a+0.8A_b+0.25B_a-3.2B_b,
+U = 1.6\,C_a + 0.8\,A_b + 0.25\,B_a - 3.2\,B_b,
 \end{equation}
-where $C_a$ is attack containment, $A_b$ is benign approval, $B_a$ is immediate attack blocking, and $B_b$ is benign immediate blocking. Utility coefficients and candidate threshold ranges were specified on the validation set prior to evaluation on the held-out test set; the test partition was not used for weight tuning or threshold selection. The selected values are $\tau_{\mathrm{clear}}=0.45$ and $\tau_{\mathrm{block}}=0.65$.
+where $C_a$ is attack containment, $A_b$ is benign approval, $B_a$ is immediate attack blocking, and $B_b$ is benign immediate blocking. Utility coefficients and candidate threshold ranges were specified on the validation set prior to evaluation on the held-out test set; the test partition was not used for weight tuning or threshold selection. The selected values are $\tau_{\mathrm{clear}} = 0.45$ and $\tau_{\mathrm{block}} = 0.65$.
 
 \subsection{Deception state algebra and session transitions}
 The deception service allocates a state namespace per suspicious session. On the first diversion at command index $t_{\mathrm{div}}$, the decoy state is initialized via a snapshot operator:
 \begin{equation}
-s_0^{\mathrm{decoy}, k} = \operatorname{Sanitize}(s_{t_{\mathrm{div}}}^{\mathrm{live}}),
+s_0^{\mathrm{decoy}, k} = \Sanitize\bigl(s_{t_{\mathrm{div}}}^{\mathrm{live}}\bigr),
 \end{equation}
-where $\operatorname{Sanitize}$ decouples the decoy state from live actuator registers, removes administrative credentials and historian metadata, and resets physical sensor accumulators while retaining non-sensitive setpoints and process telemetry. Subsequent reads and writes from session $k$ are resolved against that isolated namespace:
+where $\Sanitize$ decouples the decoy state from live actuator registers, removes administrative credentials and historian metadata, and resets physical sensor accumulators while retaining non-sensitive setpoints and process telemetry. Subsequent reads and writes from session $k$ are resolved against that isolated namespace:
 \begin{equation}
 s_{t+1}^{\mathrm{decoy}, k} = g_{\mathrm{plant}}(s_t^{\mathrm{decoy}, k}, c_t),
 \end{equation}
 where $g_{\mathrm{plant}}$ simulates protocol-consistent state updates without updating $s^{\mathrm{live}}$. The differential process divergence between live and decoy states is tracked as:
 \begin{equation}
-\Delta_{\mathrm{decoy}}(t) = \| s_t^{\mathrm{live}} - s_t^{\mathrm{decoy}, k} \|_2.
+\Delta_{\mathrm{decoy}}(t) = \left\| s_t^{\mathrm{live}} - s_t^{\mathrm{decoy}, k} \right\|_2.
 \end{equation}
 
 \subsection{Deception mechanics and timing equalization}
@@ -318,12 +330,12 @@ The session remains in deception until one of four events occurs: the score cros
 
 \subsection{Capability generation and structure}
 For an approved command $c_t$, Model~A generates a short-lived write capability:
-\begin{equation}
- K_{\mathrm{epoch}} = \operatorname{KDF}(K_{\mathrm{master}}, \text{epoch} \parallel p),
-\end{equation}
-\begin{equation}
- T_t = \operatorname{HMAC}_{K_{\mathrm{epoch}}}\bigl(\operatorname{Ser}(u,r,d,o,v,n,t_i,t_e,p)\bigr).
-\end{equation}
+\begin{subequations}
+\begin{align}
+ K_{\mathrm{epoch}} &= \KDF(K_{\mathrm{master}}, \mathrm{epoch} \parallel p), \\
+ T_t &= \HMAC_{K_{\mathrm{epoch}}}\bigl(\Ser(u, r, d, o, v, n, t_i, t_e, p)\bigr).
+\end{align}
+\end{subequations}
 The reference lifetime is $\Delta t_{\mathrm{expire}} = t_e - t_i = 800$~ms. The enforcement point recomputes the HMAC, verifies the exact target and value, checks role and safe-envelope constraints, validates the policy version and time interval, and rejects any previously used nonce. A token for one device, value, or operation cannot authorize another. HMAC is used in the reference prototype for low overhead; production deployments may use asymmetric capabilities or hardware-protected keys when organizational key distribution requires them.
 
 \begin{algorithm}[t]
@@ -331,7 +343,7 @@ The reference lifetime is $\Delta t_{\mathrm{expire}} = t_e - t_i = 800$~ms. The
 \label{alg:decision}
 \begin{algorithmic}[1]
 \REQUIRE command $c_t$, signed identity context $I_t$, session history $S_t$, master key $K_{\mathrm{master}}$
-\IF{$I_t$ is invalid or $\mathsf{CheckFreshness}(I_t) = \mathsf{False}$}
+\IF{$I_t$ is invalid or $\CheckFreshness(I_t) = \mathsf{False}$}
     \STATE \textbf{return} $\mathsf{Block}$ and append audit alert
 \ENDIF
 \IF{$c_t$ violates role $r$, target $d$, or safe envelope $[v_{\min}, v_{\max}]$}
@@ -339,13 +351,13 @@ The reference lifetime is $\Delta t_{\mathrm{expire}} = t_e - t_i = 800$~ms. The
 \ENDIF
 \STATE append $c_t$ and feature vector to session window $S_t$
 \STATE extract 152-dimensional summary vector $\phi(S_t)$
-\STATE $s_t \leftarrow 1-P(y=\mathrm{normal}\mid\phi(S_t))$ using the random-forest ensemble
+\STATE $s_t \leftarrow 1 - P(y = \mathrm{normal} \mid \phi(S_t))$ using the random-forest ensemble
 \IF{$s_t < \tau_{\mathrm{clear}}$}
-    \STATE $K_{\mathrm{epoch}} \gets \operatorname{KDF}(K_{\mathrm{master}}, \text{epoch} \parallel p)$
-    \STATE $T \gets \operatorname{HMAC}_{K_{\mathrm{epoch}}}(u\parallel r\parallel d\parallel o\parallel v\parallel n\parallel t_i\parallel t_e\parallel p)$
+    \STATE $K_{\mathrm{epoch}} \gets \KDF(K_{\mathrm{master}}, \mathrm{epoch} \parallel p)$
+    \STATE $T \gets \HMAC_{K_{\mathrm{epoch}}}(u \parallel r \parallel d \parallel o \parallel v \parallel n \parallel t_i \parallel t_e \parallel p)$
     \STATE \textbf{return} $\mathsf{Approve}$ with capability $T$
 \ELSIF{$s_t < \tau_{\mathrm{block}}$}
-    \STATE $\mathcal{S}_{\mathrm{decoy}}^{(k)} \gets \operatorname{InitDecoySession}(k, c_t)$
+    \STATE $\mathcal{S}_{\mathrm{decoy}}^{(k)} \gets \InitDecoySession(k, c_t)$
     \STATE \textbf{return} $\mathsf{Deceive}$ via session-isolated decoy state
 \ELSE
     \STATE \textbf{return} $\mathsf{Block}$, persist evidence record, and alert SOC
@@ -370,12 +382,12 @@ The reference lifetime is $\Delta t_{\mathrm{expire}} = t_e - t_i = 800$~ms. The
 \IF{$r, d, o, v$ violates local static safety bounds}
     \STATE \textbf{return} $\mathsf{Reject}(\text{"Local Safety Violation"})$
 \ENDIF
-\STATE $T' \gets \operatorname{HMAC}_{K_{\mathrm{epoch}}}(u\parallel r\parallel d\parallel o\parallel v\parallel n\parallel t_i\parallel t_e\parallel p)$
-\IF{$\operatorname{CT-Compare}(T', T) \neq \mathsf{Equal}$}
+\STATE $T' \gets \HMAC_{K_{\mathrm{epoch}}}(u \parallel r \parallel d \parallel o \parallel v \parallel n \parallel t_i \parallel t_e \parallel p)$
+\IF{$\CTCompare(T', T) \neq \mathsf{Equal}$}
     \STATE \textbf{return} $\mathsf{Reject}(\text{"Capability Authentication Mismatch"})$
 \ENDIF
-\STATE $\mathsf{AtomicAdd}(N_{\mathrm{used}}, n)$
-\STATE $\mathsf{ForwardWriteToPLC}(d, o, v)$
+\STATE $\AtomicAdd(N_{\mathrm{used}}, n)$
+\STATE $\ForwardWriteToPLC(d, o, v)$
 \STATE \textbf{return} $\mathsf{Accept}$ and record audit log
 \end{algorithmic}
 \end{algorithm}
@@ -558,7 +570,7 @@ The score distribution shows strong benign/attack separation, as illustrated in 
 \end{figure}
 
 \subsection{Triage behavior}
-At $\tau_{\mathrm{clear}}=0.45$ and $\tau_{\mathrm{block}}=0.65$, 99.17\% of benign sessions are approved, 0.83\% enter deception, and none are immediately blocked. Among attack sessions, 99.17\% achieve simulated decision-path containment: 95.00\% are immediately blocked, 4.17\% enter deception, and 0.83\% are approved (Table~\ref{tab:triageclass}). This demonstrates that the two-threshold policy exposes an operational trade-off that a single threshold would hide.
+At $\tau_{\mathrm{clear}} = 0.45$ and $\tau_{\mathrm{block}} = 0.65$, 99.17\% of benign sessions are approved, 0.83\% enter deception, and none are immediately blocked. Among attack sessions, 99.17\% achieve simulated decision-path containment: 95.00\% are immediately blocked, 4.17\% enter deception, and 0.83\% are approved (Table~\ref{tab:triageclass}). This demonstrates that the two-threshold policy exposes an operational trade-off that a single threshold would hide.
 
 \begin{table}[t]
 \centering
@@ -660,9 +672,9 @@ To evaluate whether classifier performance is sensitive to stochastic dataset sa
 \caption{Performance across five independent random seeds (\%)}
 \label{tab:multiseed}
 \renewcommand{\arraystretch}{1.12}
-\begin{tabular}{@{}lrrrr@{}}
+\begin{tabular}{@{}lcccc@{}}
 \toprule
-\textbf{Seed} & \textbf{Accuracy} & \textbf{Macro-F1} & \textbf{FPR} & \textbf{Simulated Containment} \\
+\textbf{Seed} & \textbf{Accuracy} & \textbf{Macro-F1} & \textbf{FPR} & \textbf{\makecell{Simulated\\Containment}} \\
 \midrule
 20260724 & 98.50 & 97.40 & 0.28 & 99.18 \\
 20260725 & 97.67 & 95.36 & 0.28 & 100.00 \\
