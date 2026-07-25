@@ -1,0 +1,182 @@
+{
+  "dataset": {
+    "seed": 20260724,
+    "sessions": 4000,
+    "commands": 192000,
+    "sequence_length": 48,
+    "feature_count": 19,
+    "features": [
+      "op_read",
+      "op_write",
+      "op_setpoint",
+      "value_norm",
+      "delta_norm",
+      "interarrival_log",
+      "hour_sin",
+      "hour_cos",
+      "role_permission",
+      "origin_trust",
+      "nonce_fresh",
+      "repeat_similarity",
+      "cross_sensor_residual",
+      "within_safe_envelope",
+      "rate_z",
+      "session_progress",
+      "device_pump",
+      "device_valve",
+      "device_heater"
+    ],
+    "summary_dimension": 152,
+    "split_unit": "complete session",
+    "test_shift": "later attack onset, benign-profile mixing, and maintenance-like benign transients",
+    "class_counts_total": {
+      "normal": 2400,
+      "insider_drift": 320,
+      "credential_misuse": 320,
+      "slow_evasion": 320,
+      "privilege_abuse": 320,
+      "replay": 320
+    },
+    "class_counts_train": {
+      "normal": 1680,
+      "insider_drift": 224,
+      "credential_misuse": 224,
+      "slow_evasion": 224,
+      "privilege_abuse": 224,
+      "replay": 224
+    },
+    "class_counts_validation": {
+      "normal": 360,
+      "insider_drift": 48,
+      "credential_misuse": 48,
+      "slow_evasion": 48,
+      "privilege_abuse": 48,
+      "replay": 48
+    },
+    "class_counts_test": {
+      "normal": 360,
+      "insider_drift": 48,
+      "credential_misuse": 48,
+      "slow_evasion": 48,
+      "privilege_abuse": 48,
+      "replay": 48
+    }
+  },
+  "metrics": [
+    {
+      "model": "Rules only",
+      "accuracy": 0.6016666666666667,
+      "balanced_accuracy": 0.17013888888888887,
+      "macro_precision": 0.27211482132396014,
+      "macro_recall": 0.17013888888888887,
+      "macro_f1": 0.13597387286453871,
+      "false_positive_rate": 0.0,
+      "binary_roc_auc": NaN,
+      "binary_pr_auc": NaN
+    },
+    {
+      "model": "Logistic regression",
+      "accuracy": 0.6416666666666667,
+      "balanced_accuracy": 0.3196759259259259,
+      "macro_precision": 0.5362961019516176,
+      "macro_recall": 0.3196759259259259,
+      "macro_f1": 0.2483071151431687,
+      "false_positive_rate": 0.06111111111111111,
+      "binary_roc_auc": 0.8839293981481482,
+      "binary_pr_auc": 0.8686709186460071
+    },
+    {
+      "model": "Gradient boosting",
+      "accuracy": 0.95,
+      "balanced_accuracy": 0.8988425925925926,
+      "macro_precision": 0.9360012581137201,
+      "macro_recall": 0.8988425925925926,
+      "macro_f1": 0.8986374536461491,
+      "false_positive_rate": 0.002777777777777778,
+      "binary_roc_auc": 0.9990625,
+      "binary_pr_auc": 0.9987861603211772
+    },
+    {
+      "model": "SENTINEL scorer",
+      "accuracy": 0.955,
+      "balanced_accuracy": 0.9092592592592591,
+      "macro_precision": 0.9434015479470025,
+      "macro_recall": 0.9092592592592591,
+      "macro_f1": 0.9100990552229676,
+      "false_positive_rate": 0.002777777777777778,
+      "binary_roc_auc": 0.9987962962962963,
+      "binary_pr_auc": 0.9984550346597416
+    }
+  ],
+  "triage": {
+    "tau_clear": 0.4500000000000001,
+    "tau_block": 0.6500000000000001,
+    "normal_approval_rate": 0.9916666666666667,
+    "normal_honeypot_rate": 0.008333333333333333,
+    "normal_false_block_rate": 0.0,
+    "attack_containment_rate": 0.9833333333333333,
+    "attack_immediate_block_rate": 0.9625,
+    "attack_missed_rate": 0.016666666666666666
+  },
+  "token_tests": {
+    "valid_command_accepted": true,
+    "unauthorized_cases": {
+      "missing_token": {
+        "attempts": 2000,
+        "accepted": 0,
+        "rejected": 2000
+      },
+      "tampered_value": {
+        "attempts": 2000,
+        "accepted": 0,
+        "rejected": 2000
+      },
+      "expired": {
+        "attempts": 2000,
+        "accepted": 0,
+        "rejected": 2000
+      },
+      "wrong_device": {
+        "attempts": 2000,
+        "accepted": 0,
+        "rejected": 2000
+      },
+      "replay": {
+        "attempts": 2000,
+        "accepted": 0,
+        "rejected": 2000
+      },
+      "unauthorized_role": {
+        "attempts": 2000,
+        "accepted": 0,
+        "rejected": 2000
+      },
+      "unsafe_value": {
+        "attempts": 2000,
+        "accepted": 0,
+        "rejected": 2000
+      }
+    }
+  },
+  "latency": {
+    "benchmark_iterations": 1000,
+    "scorer_inference_ms": {
+      "p50": 3.197229,
+      "p95": 3.27373605,
+      "p99": 3.374053,
+      "mean": 3.1934064230000003
+    },
+    "full_feature_scaling_scorer_ms": {
+      "p50": 3.3244375,
+      "p95": 3.4334246499999996,
+      "p99": 3.75890042,
+      "mean": 3.335186159
+    },
+    "hmac_issue_verify_ms": {
+      "p50": 0.002,
+      "p95": 0.002042,
+      "p99": 0.0020844099999999996,
+      "mean": 0.002021540000000001
+    }
+  }
+}

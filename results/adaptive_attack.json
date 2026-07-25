@@ -1,0 +1,42 @@
+[
+  {
+    "target_delta_v": 0.2,
+    "achieved_delta_v": 0.0,
+    "steps_taken": 1,
+    "evaded_successfully": false,
+    "detected_at_step": 1,
+    "mean_score": 1.0
+  },
+  {
+    "target_delta_v": 0.4,
+    "achieved_delta_v": 0.0,
+    "steps_taken": 1,
+    "evaded_successfully": false,
+    "detected_at_step": 1,
+    "mean_score": 1.0
+  },
+  {
+    "target_delta_v": 0.6,
+    "achieved_delta_v": 0.0,
+    "steps_taken": 1,
+    "evaded_successfully": false,
+    "detected_at_step": 1,
+    "mean_score": 1.0
+  },
+  {
+    "target_delta_v": 0.8,
+    "achieved_delta_v": 0.0,
+    "steps_taken": 1,
+    "evaded_successfully": false,
+    "detected_at_step": 1,
+    "mean_score": 1.0
+  },
+  {
+    "target_delta_v": 1.0,
+    "achieved_delta_v": 0.0,
+    "steps_taken": 1,
+    "evaded_successfully": false,
+    "detected_at_step": 1,
+    "mean_score": 1.0
+  }
+]

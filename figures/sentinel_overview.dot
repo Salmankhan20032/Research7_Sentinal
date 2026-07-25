@@ -1,0 +1,30 @@
+digraph G {
+  graph [rankdir=TB, newrank=true, bgcolor="white", pad="0.08", nodesep="0.28", ranksep="0.48", fontname="Helvetica"];
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=14, margin="0.14,0.10", penwidth=1.5, color="#475569", fillcolor="#F8FAFC"];
+  edge [fontname="Helvetica", fontsize=10.5, penwidth=1.4, color="#475569", arrowsize=0.85];
+
+  client [label="Worker / service\ncommand", fillcolor="#EFF6FF", color="#2563EB"];
+  gateway [label="Ingress\nidentity + schema", fillcolor="#F1F5F9"];
+  broker [label="Model B\ncommand broker", fillcolor="#F5F3FF", color="#7C3AED"];
+  trust [label="Model A\npolicy + trust score", fillcolor="#ECFDF5", color="#059669"];
+  enforce [label="Write enforcement\ntoken + nonce checks", fillcolor="#ECFEFF", color="#0891B2"];
+  device [label="PLC / actuator /\nsetpoint", fillcolor="#F0FDFA", color="#0F766E"];
+  honey [label="DECEIVE\nsession-isolated decoy", fillcolor="#FFF7ED", color="#EA580C"];
+  block [label="BLOCK\nlockdown + alert", fillcolor="#FEF2F2", color="#DC2626"];
+  forensic [label="Append-only evidence\nand decision audit", fillcolor="#FFFBEB", color="#D97706"];
+
+  {rank=same; client; gateway; broker; trust; enforce; device;}
+  client -> gateway;
+  gateway -> broker;
+  broker -> trust [label="signed context"];
+  trust -> enforce [label="APPROVE", color="#059669", fontcolor="#047857"];
+  enforce -> device [label="authorized write", color="#059669", fontcolor="#047857"];
+
+  trust -> honey [label="uncertain risk", color="#EA580C", fontcolor="#C2410C"];
+  trust -> block [label="hard violation / high risk", color="#DC2626", fontcolor="#B91C1C"];
+  broker -> honey [style=dashed, label="route session", color="#EA580C", fontcolor="#C2410C"];
+  honey -> forensic [label="decoy evidence", color="#D97706", fontcolor="#B45309"];
+  block -> forensic [label="incident record", color="#D97706", fontcolor="#B45309"];
+  enforce -> forensic [label="audit", color="#D97706", fontcolor="#B45309"];
+  honey -> client [style=dashed, label="protocol-consistent reply", color="#EA580C", fontcolor="#C2410C", constraint=false];
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "scenario": "Normal operator setpoint update",
+    "expected_outcome": "Approve",
+    "observed_outcome": "Approve",
+    "plc_modified": "Yes",
+    "proc_latency_ms": 0.05,
+    "e2e_latency_ms": 12.03
+  },
+  {
+    "scenario": "Modified payload (value altered post-issuance)",
+    "expected_outcome": "Reject",
+    "observed_outcome": "Reject",
+    "plc_modified": "No",
+    "proc_latency_ms": 0.03,
+    "e2e_latency_ms": 2.7
+  },
+  {
+    "scenario": "Replayed capability (duplicate nonce submission)",
+    "expected_outcome": "Reject",
+    "observed_outcome": "Reject",
+    "plc_modified": "No",
+    "proc_latency_ms": 0.0,
+    "e2e_latency_ms": 2.93
+  },
+  {
+    "scenario": "Unauthorized role write (engineer write without permission)",
+    "expected_outcome": "Block",
+    "observed_outcome": "Block",
+    "plc_modified": "No",
+    "proc_latency_ms": 2.35,
+    "e2e_latency_ms": 2.35
+  },
+  {
+    "scenario": "Slow setpoint drift (sub-threshold evasion)",
+    "expected_outcome": "Deceive",
+    "observed_outcome": "Deceive",
+    "plc_modified": "No",
+    "proc_latency_ms": 3.14,
+    "e2e_latency_ms": 3.14
+  },
+  {
+    "scenario": "Compromised Model B (broker alters register target)",
+    "expected_outcome": "Reject",
+    "observed_outcome": "Reject",
+    "plc_modified": "No",
+    "proc_latency_ms": 0.02,
+    "e2e_latency_ms": 1.85
+  }
+]

@@ -1,0 +1,105 @@
+{
+  "dataset_provenance_statement": "Evaluation on a 50-channel multivariate process telemetry benchmark inspired by characteristics of HAI and SWaT.",
+  "dynamic_baselines": [
+    {
+      "model": "Rules Only",
+      "macro_f1": 20.11,
+      "recall": 30.49,
+      "fpr": 0.0,
+      "train_time_s": 0.001,
+      "inference_ms": 0.0,
+      "mem_mb": 0.1
+    },
+    {
+      "model": "Logistic Regression",
+      "macro_f1": 41.29,
+      "recall": 43.37,
+      "fpr": 0.0,
+      "train_time_s": 0.02,
+      "inference_ms": 0.0002,
+      "mem_mb": 0.5
+    },
+    {
+      "model": "Neural Sequence Net (MLP)",
+      "macro_f1": 28.89,
+      "recall": 33.77,
+      "fpr": 0.97,
+      "train_time_s": 0.55,
+      "inference_ms": 0.0014,
+      "mem_mb": 14.5
+    },
+    {
+      "model": "Gradient Boosting (HistGB)",
+      "macro_f1": 27.09,
+      "recall": 31.89,
+      "fpr": 0.0,
+      "train_time_s": 1.78,
+      "inference_ms": 0.0172,
+      "mem_mb": 4.2
+    },
+    {
+      "model": "SENTINEL Scorer (RF)",
+      "macro_f1": 28.87,
+      "recall": 35.44,
+      "fpr": 0.0,
+      "train_time_s": 0.14,
+      "inference_ms": 0.0229,
+      "mem_mb": 6.8
+    }
+  ],
+  "unseen_attack_4column_breakdown": [
+    {
+      "unseen_attack_family": "insider_drift",
+      "samples_tested": 82,
+      "approved_pct": 0.0,
+      "deceived_pct": 0.0,
+      "blocked_pct": 100.0,
+      "total_containment_pct": 100.0,
+      "live_physical_impact": "0.00 (Locked)"
+    },
+    {
+      "unseen_attack_family": "credential_misuse",
+      "samples_tested": 80,
+      "approved_pct": 0.0,
+      "deceived_pct": 0.0,
+      "blocked_pct": 100.0,
+      "total_containment_pct": 100.0,
+      "live_physical_impact": "0.00 (Locked)"
+    },
+    {
+      "unseen_attack_family": "slow_evasion",
+      "samples_tested": 96,
+      "approved_pct": 0.0,
+      "deceived_pct": 0.0,
+      "blocked_pct": 100.0,
+      "total_containment_pct": 100.0,
+      "live_physical_impact": "0.00 (Locked)"
+    },
+    {
+      "unseen_attack_family": "privilege_abuse",
+      "samples_tested": 67,
+      "approved_pct": 0.0,
+      "deceived_pct": 0.0,
+      "blocked_pct": 100.0,
+      "total_containment_pct": 100.0,
+      "live_physical_impact": "0.00 (Locked)"
+    },
+    {
+      "unseen_attack_family": "replay",
+      "samples_tested": 68,
+      "approved_pct": 0.0,
+      "deceived_pct": 0.0,
+      "blocked_pct": 100.0,
+      "total_containment_pct": 100.0,
+      "live_physical_impact": "0.00 (Locked)"
+    }
+  ],
+  "mcnemar_statistical_test": {
+    "b_discordant_a_correct": 30,
+    "c_discordant_b_correct": 14,
+    "mcnemar_stat": 5.114,
+    "raw_p_value": 0.038,
+    "holm_adjusted_p_value": 0.042,
+    "is_statistically_significant": true
+  }
+}

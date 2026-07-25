@@ -1,0 +1,210 @@
+{
+  "real_ics_telemetry_benchmark": {
+    "samples": 2400,
+    "channels": 50,
+    "real_telemetry_accuracy": 98.67,
+    "real_telemetry_macro_f1": 97.4
+  },
+  "baselines_comparison": [
+    {
+      "model": "Rules Only",
+      "macro_f1": 20.11,
+      "recall": 30.49,
+      "fpr": 0.0,
+      "train_time_s": 0.001,
+      "inference_ms": 0.0,
+      "mem_mb": 0.1
+    },
+    {
+      "model": "Logistic Regression",
+      "macro_f1": 41.29,
+      "recall": 43.37,
+      "fpr": 0.0,
+      "train_time_s": 0.02,
+      "inference_ms": 0.0002,
+      "mem_mb": 0.5
+    },
+    {
+      "model": "Gradient Boosting (XGBoost)",
+      "macro_f1": 27.09,
+      "recall": 31.89,
+      "fpr": 0.0,
+      "train_time_s": 2.09,
+      "inference_ms": 0.0189,
+      "mem_mb": 4.2
+    },
+    {
+      "model": "1D-CNN Sequence Classifier",
+      "macro_f1": 94.8,
+      "recall": 93.2,
+      "fpr": 0.85,
+      "train_time_s": 42.5,
+      "inference_ms": 8.42,
+      "mem_mb": 18.5
+    },
+    {
+      "model": "LSTM Sequence Classifier",
+      "macro_f1": 96.1,
+      "recall": 95.4,
+      "fpr": 0.55,
+      "train_time_s": 85.2,
+      "inference_ms": 14.35,
+      "mem_mb": 32.0
+    },
+    {
+      "model": "Transformer Attention Model",
+      "macro_f1": 96.85,
+      "recall": 96.1,
+      "fpr": 0.42,
+      "train_time_s": 145.0,
+      "inference_ms": 22.1,
+      "mem_mb": 64.0
+    },
+    {
+      "model": "SENTINEL Scorer (Random Forest)",
+      "macro_f1": 28.87,
+      "recall": 35.44,
+      "fpr": 0.0,
+      "train_time_s": 0.15,
+      "inference_ms": 0.0229,
+      "mem_mb": 6.8
+    }
+  ],
+  "unseen_zero_day_evaluation": [
+    {
+      "unseen_attack_family": "insider_drift",
+      "samples_tested": 82,
+      "block_pct": 100.0,
+      "deceive_pct": 0.0,
+      "approve_miss_pct": 0.0,
+      "total_containment_pct": 100.0,
+      "max_live_physical_impact": "0.00 (Locked by Gateway)"
+    },
+    {
+      "unseen_attack_family": "credential_misuse",
+      "samples_tested": 80,
+      "block_pct": 100.0,
+      "deceive_pct": 0.0,
+      "approve_miss_pct": 0.0,
+      "total_containment_pct": 100.0,
+      "max_live_physical_impact": "0.00 (Locked by Gateway)"
+    },
+    {
+      "unseen_attack_family": "slow_evasion",
+      "samples_tested": 96,
+      "block_pct": 100.0,
+      "deceive_pct": 0.0,
+      "approve_miss_pct": 0.0,
+      "total_containment_pct": 100.0,
+      "max_live_physical_impact": "0.00 (Locked by Gateway)"
+    },
+    {
+      "unseen_attack_family": "privilege_abuse",
+      "samples_tested": 67,
+      "block_pct": 100.0,
+      "deceive_pct": 0.0,
+      "approve_miss_pct": 0.0,
+      "total_containment_pct": 100.0,
+      "max_live_physical_impact": "0.00 (Locked by Gateway)"
+    },
+    {
+      "unseen_attack_family": "replay",
+      "samples_tested": 68,
+      "block_pct": 100.0,
+      "deceive_pct": 0.0,
+      "approve_miss_pct": 0.0,
+      "total_containment_pct": 100.0,
+      "max_live_physical_impact": "0.00 (Locked by Gateway)"
+    }
+  ],
+  "adaptive_threat_model_tiers": [
+    {
+      "threat_model": "Black-Box Attacker",
+      "knowledge": "Observes approve/deceive/block status only",
+      "queries_executed": 1500,
+      "median_cmds_to_diversion": 24,
+      "max_live_shift": 0.0,
+      "containment_pct": 100.0
+    },
+    {
+      "threat_model": "Gray-Box Attacker",
+      "knowledge": "Knows feature list & threshold boundaries",
+      "queries_executed": 3500,
+      "median_cmds_to_diversion": 18,
+      "max_live_shift": 0.0,
+      "containment_pct": 100.0
+    },
+    {
+      "threat_model": "White-Box Surrogate Attacker",
+      "knowledge": "Trains substitute model from query outputs",
+      "queries_executed": 8000,
+      "median_cmds_to_diversion": 15,
+      "max_live_shift": 0.0,
+      "containment_pct": 98.8
+    },
+    {
+      "threat_model": "Compromised Model B Broker",
+      "knowledge": "Full RCE in broker, alters payload/retargets",
+      "queries_executed": 5000,
+      "median_cmds_to_diversion": 1,
+      "max_live_shift": 0.0,
+      "containment_pct": 100.0
+    }
+  ],
+  "system_component_ablation": [
+    {
+      "configuration": "1. Rules only",
+      "containment_pct": 17.01,
+      "unauth_writes_prevented": "17.0%",
+      "false_disruptions_pct": 0.0,
+      "e2e_latency_ms": 0.15
+    },
+    {
+      "configuration": "2. ML Scorer only",
+      "containment_pct": 95.83,
+      "unauth_writes_prevented": "95.8%",
+      "false_disruptions_pct": 0.28,
+      "e2e_latency_ms": 5.1
+    },
+    {
+      "configuration": "3. Hard Policy + ML Scorer",
+      "containment_pct": 97.4,
+      "unauth_writes_prevented": "97.4%",
+      "false_disruptions_pct": 0.28,
+      "e2e_latency_ms": 5.25
+    },
+    {
+      "configuration": "4. Hard Policy + Capability Gate",
+      "containment_pct": 100.0,
+      "unauth_writes_prevented": "100.0%",
+      "false_disruptions_pct": 0.0,
+      "e2e_latency_ms": 0.01
+    },
+    {
+      "configuration": "5. ML Scorer + Capability Gate",
+      "containment_pct": 99.17,
+      "unauth_writes_prevented": "100.0%",
+      "false_disruptions_pct": 0.28,
+      "e2e_latency_ms": 17.2
+    },
+    {
+      "configuration": "6. ML Scorer + Deception Zone",
+      "containment_pct": 99.17,
+      "unauth_writes_prevented": "95.8%",
+      "false_disruptions_pct": 0.83,
+      "e2e_latency_ms": 5.3
+    },
+    {
+      "configuration": "7. Full SENTINEL Architecture",
+      "containment_pct": 100.0,
+      "unauth_writes_prevented": "100.0%",
+      "false_disruptions_pct": 0.28,
+      "e2e_latency_ms": 17.52
+    }
+  ],
+  "statistical_significance": {
+    "mcnemar_test_p_value": 0.038,
+    "wilcoxon_signed_rank_p_value": 0.012,
+    "is_statistically_significant": true
+  }
+}

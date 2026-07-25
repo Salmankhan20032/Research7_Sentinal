@@ -1,0 +1,10 @@
+{
+  "tau_clear": 0.4500000000000001,
+  "tau_block": 0.6500000000000001,
+  "normal_approval_rate": 0.9916666666666667,
+  "normal_honeypot_rate": 0.008333333333333333,
+  "normal_false_block_rate": 0.0,
+  "attack_containment_rate": 0.9833333333333333,
+  "attack_immediate_block_rate": 0.9625,
+  "attack_missed_rate": 0.016666666666666666
+}

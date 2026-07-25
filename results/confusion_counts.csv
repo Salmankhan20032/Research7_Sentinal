@@ -1,0 +1,7 @@
+,normal,insider_drift,credential_misuse,slow_evasion,privilege_abuse,replay
+normal,359,0,0,1,0,0
+insider_drift,0,26,0,22,0,0
+credential_misuse,1,0,47,0,0,0
+slow_evasion,1,0,0,47,0,0
+privilege_abuse,2,0,0,0,46,0
+replay,0,0,0,0,0,48

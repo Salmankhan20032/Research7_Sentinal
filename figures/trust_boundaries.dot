@@ -1,0 +1,32 @@
+digraph G {
+  graph [rankdir=LR, compound=true, newrank=true, bgcolor="white", pad="0.08", nodesep="0.30", ranksep="0.55", fontname="Helvetica"];
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12.5, margin="0.14,0.10", penwidth=1.3, color="#64748B", fillcolor="white"];
+  edge [fontname="Helvetica", fontsize=10, penwidth=1.25, color="#475569", arrowsize=0.8];
+
+  subgraph cluster_public {
+    label="Public / enterprise zone"; color="#60A5FA"; penwidth=1.4; style="rounded,filled"; fillcolor="#EFF6FF"; fontname="Helvetica"; fontsize=13;
+    worker [label="Signed worker +\ndevice identity"];
+    mb [label="Model B\nnetwork broker"];
+    worker -> mb [label="request"];
+  }
+
+  subgraph cluster_control {
+    label="Protected decision zone"; color="#4ADE80"; penwidth=1.4; style="rounded,filled"; fillcolor="#F0FDF4"; fontname="Helvetica"; fontsize=13;
+    key [label="Protected key +\npolicy version", shape=cylinder, fillcolor="#ECFDF5"];
+    ma [label="Model A\npolicy decision point"];
+    log [label="Append-only\naudit log", shape=cylinder, fillcolor="#FFFBEB"];
+    key -> ma [label="signing key"];
+    ma -> log [label="decision"];
+  }
+
+  subgraph cluster_ot {
+    label="OT enforcement zone"; color="#22D3EE"; penwidth=1.4; style="rounded,filled"; fillcolor="#ECFEFF"; fontname="Helvetica"; fontsize=13;
+    pep [label="Enforcement gateway\nnonce + scope checks"];
+    plc [label="PLC / actuator"];
+    pep -> plc [label="validated write"];
+  }
+
+  mb -> ma [label="allow-listed channel", ltail=cluster_public, lhead=cluster_control];
+  ma -> pep [label="scoped capability", color="#059669", fontcolor="#047857", ltail=cluster_control, lhead=cluster_ot];
+  mb -> pep [label="exact command", style=dashed, ltail=cluster_public, lhead=cluster_ot];
+}

@@ -1,0 +1,63 @@
+{
+  "seed": 20260724,
+  "sessions": 4000,
+  "commands": 192000,
+  "sequence_length": 48,
+  "feature_count": 19,
+  "features": [
+    "op_read",
+    "op_write",
+    "op_setpoint",
+    "value_norm",
+    "delta_norm",
+    "interarrival_log",
+    "hour_sin",
+    "hour_cos",
+    "role_permission",
+    "origin_trust",
+    "nonce_fresh",
+    "repeat_similarity",
+    "cross_sensor_residual",
+    "within_safe_envelope",
+    "rate_z",
+    "session_progress",
+    "device_pump",
+    "device_valve",
+    "device_heater"
+  ],
+  "summary_dimension": 152,
+  "split_unit": "complete session",
+  "test_shift": "later attack onset, benign-profile mixing, and maintenance-like benign transients",
+  "class_counts_total": {
+    "normal": 2400,
+    "insider_drift": 320,
+    "credential_misuse": 320,
+    "slow_evasion": 320,
+    "privilege_abuse": 320,
+    "replay": 320
+  },
+  "class_counts_train": {
+    "normal": 1680,
+    "insider_drift": 224,
+    "credential_misuse": 224,
+    "slow_evasion": 224,
+    "privilege_abuse": 224,
+    "replay": 224
+  },
+  "class_counts_validation": {
+    "normal": 360,
+    "insider_drift": 48,
+    "credential_misuse": 48,
+    "slow_evasion": 48,
+    "privilege_abuse": 48,
+    "replay": 48
+  },
+  "class_counts_test": {
+    "normal": 360,
+    "insider_drift": 48,
+    "credential_misuse": 48,
+    "slow_evasion": 48,
+    "privilege_abuse": 48,
+    "replay": 48
+  }
+}

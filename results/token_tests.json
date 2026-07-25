@@ -1,0 +1,40 @@
+{
+  "valid_command_accepted": true,
+  "unauthorized_cases": {
+    "missing_token": {
+      "attempts": 2000,
+      "accepted": 0,
+      "rejected": 2000
+    },
+    "tampered_value": {
+      "attempts": 2000,
+      "accepted": 0,
+      "rejected": 2000
+    },
+    "expired": {
+      "attempts": 2000,
+      "accepted": 0,
+      "rejected": 2000
+    },
+    "wrong_device": {
+      "attempts": 2000,
+      "accepted": 0,
+      "rejected": 2000
+    },
+    "replay": {
+      "attempts": 2000,
+      "accepted": 0,
+      "rejected": 2000
+    },
+    "unauthorized_role": {
+      "attempts": 2000,
+      "accepted": 0,
+      "rejected": 2000
+    },
+    "unsafe_value": {
+      "attempts": 2000,
+      "accepted": 0,
+      "rejected": 2000
+    }
+  }
+}

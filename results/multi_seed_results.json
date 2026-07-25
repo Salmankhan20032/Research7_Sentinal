@@ -1,0 +1,59 @@
+{
+  "seeds": [
+    20260724,
+    20260725,
+    20260726,
+    20260727,
+    20260728
+  ],
+  "per_seed": [
+    {
+      "seed": 20260724,
+      "accuracy": 98.5,
+      "balanced_accuracy": 97.17,
+      "macro_f1": 97.4,
+      "fpr": 0.28,
+      "containment": 99.18
+    },
+    {
+      "seed": 20260725,
+      "accuracy": 97.67,
+      "balanced_accuracy": 95.54,
+      "macro_f1": 95.36,
+      "fpr": 0.28,
+      "containment": 100.0
+    },
+    {
+      "seed": 20260726,
+      "accuracy": 98.67,
+      "balanced_accuracy": 97.19,
+      "macro_f1": 97.19,
+      "fpr": 0.0,
+      "containment": 100.0
+    },
+    {
+      "seed": 20260727,
+      "accuracy": 98.17,
+      "balanced_accuracy": 96.64,
+      "macro_f1": 96.89,
+      "fpr": 0.0,
+      "containment": 99.61
+    },
+    {
+      "seed": 20260728,
+      "accuracy": 99.0,
+      "balanced_accuracy": 97.99,
+      "macro_f1": 98.17,
+      "fpr": 0.0,
+      "containment": 100.0
+    }
+  ],
+  "mean_accuracy": 98.4,
+  "std_accuracy": 0.45,
+  "mean_macro_f1": 97.0,
+  "std_macro_f1": 0.92,
+  "mean_fpr": 0.11,
+  "std_fpr": 0.14,
+  "mean_containment": 99.76,
+  "std_containment": 0.33
+}
