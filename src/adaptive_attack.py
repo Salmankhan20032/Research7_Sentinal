@@ -1,4 +1,4 @@
-"""
+r"""
 Adaptive Adversary Attack Simulator for SENTINEL.
 Empirically evaluates the minimum number of commands N_evade required for an adaptive
 adversary to achieve target setpoint drift \Delta V without exceeding clear threshold \tau_{clear} = 0.45.
